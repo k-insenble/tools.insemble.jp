@@ -1,0 +1,47 @@
+---
+/* 用語集。解説と記述例は閉じていても HTML に出しておく（検索エンジン・AI に本文を届けるため）
+   開閉と絞り込みは src/scripts/ogp/page.js */
+import Icon from "../Icon.astro";
+import { copyBtn } from "../../scripts/copy.js";
+import D from "../../data/ogp.js";
+
+const cats = ["すべて", ...new Set(D.GLOSSARY.map((g) => g.cat))];
+---
+<div>
+  <div class="gloss-controls">
+    <div class="search">
+      <Icon name="search" size={17} style="color:var(--muted)" />
+      <input id="gloss-q" type="search" placeholder="用語を検索（og:image など）" aria-label="用語を検索" />
+    </div>
+    <div class="chips">
+      {cats.map((c, i) => <button type="button" class={"chip" + (i === 0 ? " on" : "")} data-gloss-cat={c}>{c}</button>)}
+    </div>
+  </div>
+  <dl class="gloss-list">
+    {D.GLOSSARY.map((g) => (
+      <div class="g-row" data-cat={g.cat} data-search={(g.term + g.short + g.body).toLowerCase()}>
+        <dt class="g-term"><code>{g.term}</code></dt>
+        <dd class="g-def">
+          {/* クリックは行（g-row）で受ける。button はキーボード操作と開閉状態の読み上げ用 */}
+          <button type="button" class="g-def-top" aria-expanded="false">
+            <span class="g-short">{g.short}</span>
+            <span class="g-cat">{g.cat}</span>
+            <Icon name="chevron" size={16} class="g-chev" />
+          </button>
+          <div class="q-a-wrap" inert>
+            <div>
+              <div class="g-detail">
+                <p class="g-long">{g.body}</p>
+                <div class="code-label" style="display:flex;justify-content:space-between;align-items:center">
+                  <span>記述例</span><Fragment set:html={copyBtn(g.example)} />
+                </div>
+                <pre class="code-block dark"><code>{g.example}</code></pre>
+              </div>
+            </div>
+          </div>
+        </dd>
+      </div>
+    ))}
+    <p class="empty-line" id="gloss-empty" hidden>該当する用語が見つかりませんでした。</p>
+  </dl>
+</div>

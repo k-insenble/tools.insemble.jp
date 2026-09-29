@@ -1,0 +1,49 @@
+@import "tailwindcss";
+
+/* ===========================================================
+   デザイントークン（Tailwind v4 の @theme）
+   例：bg-paper / text-ink / text-primary-ink / font-display / rounded-lg / p-g-md
+   値は各ページCSS（hub.css / ogp.css）の :root と同じ。変えるときは両方そろえる。
+   =========================================================== */
+@theme {
+  --font-display: "M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", sans-serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Noto Sans CJK JP", "Yu Gothic UI", Meiryo, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+
+  --color-bg: #ffffff;
+  --color-paper: oklch(0.968 0.003 225);
+  --color-surface: #ffffff;
+  --color-ink: oklch(0.20 0.014 230);
+  --color-ink-2: oklch(0.35 0.012 226);
+  --color-muted: oklch(0.47 0.010 222);
+  --color-line: oklch(0.895 0.004 220);
+  --color-line-2: oklch(0.80 0.006 220);
+
+  --color-primary: oklch(0.47 0.095 205);
+  --color-primary-ink: oklch(0.40 0.095 207);
+  --color-primary-soft: oklch(0.955 0.026 198);
+  --color-primary-soft-2: oklch(0.89 0.045 198);
+
+  --color-ok: oklch(0.52 0.105 162);
+  --color-ok-bg: oklch(0.955 0.038 162);
+  --color-warn: oklch(0.62 0.11 75);
+  --color-warn-ink: oklch(0.45 0.10 68);
+  --color-warn-bg: oklch(0.955 0.045 80);
+  --color-err: oklch(0.55 0.15 25);
+  --color-err-bg: oklch(0.955 0.04 25);
+  --color-info: oklch(0.50 0.095 238);
+  --color-info-bg: oklch(0.955 0.034 235);
+
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 22px;
+  --radius-xl: 28px;
+
+  /* 黄金比スケール φ=1.618 */
+  --spacing-g-xs: 10px;
+  --spacing-g-sm: 16px;
+  --spacing-g-md: 26px;
+  --spacing-g-lg: 42px;
+  --spacing-g-xl: 68px;
+  --spacing-g-2xl: 110px;
+}

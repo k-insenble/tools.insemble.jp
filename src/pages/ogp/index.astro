@@ -1,0 +1,256 @@
+---
+/* OGPチェッカー（React なし）
+   上＝道具ゾーン（paper）／下＝読みもの（白）。動きは src/scripts/ogp/page.js */
+import Base from "../../layouts/Base.astro";
+import Header from "../../components/Header.astro";
+import Footer from "../../components/Footer.astro";
+import Corp from "../../components/Corp.astro";
+import Icon from "../../components/Icon.astro";
+import SectionHead from "../../components/SectionHead.astro";
+import Glossary from "../../components/ogp/Glossary.astro";
+import Faq from "../../components/Faq.astro";
+import D from "../../data/ogp.js";
+import HUB from "../../data/hub.js";
+import { ORG, PUBLISHER } from "../../data/org.js";
+import "../../styles/ogp.css";
+
+const url = "https://tools.insemble.jp/ogp/";
+const description = "URLを入れるだけで、X・Facebook・LINE・Slack・Discord・Teamsでのシェア表示を確認できる無料のOGPチェッカー。採点と直すところ、フレームワーク別のコードまで一度に出します。";
+const jsonLd = [
+  ORG,
+  { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "OGPチェッカー", description, applicationCategory: "DeveloperApplication", operatingSystem: "Web", inLanguage: "ja", url, dateModified: D.UPDATED, offers: { "@type": "Offer", price: "0", priceCurrency: "JPY" }, publisher: PUBLISHER },
+  { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [["ホーム", "https://tools.insemble.jp/"], ["OGPチェッカー", url]].map(([n, u], i) => ({ "@type": "ListItem", position: i + 1, name: n, item: u })) },
+  { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: D.FAQ.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })) },
+];
+
+const NAV: [string, string][] = [["/#tools", "ツール一覧"], ["#guide", "使い方ガイド"], ["#faq", "よくある質問"]];
+const FOOT: { h: string; items: [string, string][] }[] = [
+  { h: "ツール", items: [["OGPチェッカー", "/ogp/"], ["ツール一覧", "/#tools"]] },
+  { h: "学ぶ", items: [["OGPの基本", "#guide"], ["OGPタグ辞典", "#glossary"], ["よくある質問", "#faq"]] },
+  { h: "サポート", items: [["ハブのよくある質問", "/#faq"]] },
+  { h: "このサイトについて", items: [["運営会社（insemble）", "https://www.insemble.co.jp/"]] },
+];
+
+const STEPS = [
+  { n: "1", t: "URLを入力", d: "チェックしたいページのURLを貼り付けて「チェック」を押すだけ。" },
+  { n: "2", t: "表示を確認", d: "X・Facebook・LINE・Slackなど、各サービスでの見え方をその場でプレビュー。" },
+  { n: "3", t: "コードで直す", d: "改善点とフレームワーク別のコードをコピーして、そのまま貼り付け。" },
+];
+const GUIDE = D.GUIDE.filter((_, i) => [0, 2].includes(i));
+
+/* 関連ツール：公開中を先に、同じカテゴリ（メタタグ・SNS）から5つ */
+const TOOL_ICON: Record<string, string> = { noindex: "eye", "meta-tags": "tag", canonical: "link", "og-image": "eye", "share-link": "link", redirect: "arrow" };
+const related = HUB.TOOLS.filter((t) => t.slug !== "ogp" && (t.cat === "meta" || t.cat === "sns"))
+  .sort((a, b) => (a.status === "live" ? -1 : 1) - (b.status === "live" ? -1 : 1)).slice(0, 5);
+const LOG = HUB.CHANGELOG.filter((u) => u.tool === "ogp");
+
+const ABOUT = [
+  ["しくみ", "入力されたURLのページを取得し、head 内の OGP・Twitterカード・canonical を読み取って採点します。"],
+  ["保存", "入力したURLと結果は保存しません。最近チェックしたURLは、お使いのブラウザ内にだけ残ります。"],
+  ["確認できる場所", "X・Facebook・LINE・Slack・Discord・Microsoft Teams"],
+  ["料金", "無料・登録不要。PC・スマホどちらでも使えます。"],
+  ["免責", "結果の正確性は保証しません。本ツールの利用により生じた損害について、当社は責任を負いかねます。"],
+];
+---
+<Base
+  title="OGPチェッカー｜SNSのシェア表示を無料で確認｜insemble tools"
+  description={description}
+  path="/ogp/"
+  ogTitle="OGPチェッカー｜シェアする前に、見え方をたしかめよう"
+  jsonLd={jsonLd}
+>
+  <Header nav={NAV} />
+
+  <!-- スクロール中も再チェックできる小さなURL欄 -->
+  <div class="minibar" aria-hidden="true">
+    <form class="wrap minibar-in" data-checker>
+      <span class="minibar-k">OGPチェッカー</span>
+      <div class="minibar-field">
+        <Icon name="link" size={15} style="color:var(--muted)" />
+        <input data-url-input type="text" inputmode="url" autocomplete="url" autocapitalize="none" spellcheck="false" placeholder="URLを入れて再チェック" tabindex="-1" aria-label="チェックするURL" />
+      </div>
+      <button class="btn btn-primary" type="submit" data-check-btn tabindex="-1">
+        <span class="spin" hidden></span><span data-idle-ic><Icon name="bolt" size={15} /></span>チェック
+      </button>
+    </form>
+  </div>
+
+  <main>
+    <!-- ===== 道具ゾーン ===== -->
+    <div class="tool-zone" id="tool">
+      <div class="wrap tooltop">
+        <nav class="crumb" aria-label="パンくずリスト">
+          <ol>
+            <li><a href="/">ホーム</a></li>
+            <li><span aria-current="page">OGPチェッカー</span></li>
+          </ol>
+        </nav>
+        <div class="tmeta">
+          <span><Icon name="link" size={13} />URLを取得して確認</span>
+          <span><Icon name="check" size={13} />入力内容は保存しません</span>
+          <span>最終更新 <time datetime={D.UPDATED}>{D.UPDATED.replace(/-/g, "/")}</time></span>
+        </div>
+      </div>
+
+      <section class="hero tz-hero" id="hero">
+        <div class="hero-glow"></div>
+        <div class="wrap hero-in">
+          <h1 class="badge"><Icon name="sparkle" size={14} />OGPチェッカー｜無料のOGP確認ツール</h1>
+          <p class="hero-title">シェアする前に、<span class="hl">見え方</span>をたしかめよう。</p>
+          <p class="tz-sub">X・LINE・Slackなど6つのサービスでの表示を確認して、足りないタグのコードまで出します。</p>
+
+          <form class="checker" data-checker>
+            <div class="checker-field">
+              <Icon name="link" size={18} style="color:var(--muted)" />
+              <input data-url-input type="text" inputmode="url" autocomplete="url" autocapitalize="none" spellcheck="false" placeholder="あなたのサイトのURL（https://〜）" aria-label="チェックするURL" autofocus />
+            </div>
+            <button class="btn btn-primary checker-btn" type="submit" data-check-btn>
+              <span class="spin" hidden></span><span data-idle-ic><Icon name="bolt" size={16} /></span>
+              <span data-label="無料でチェック" data-busy="チェック中">無料でチェック</span>
+            </button>
+          </form>
+
+          <div class="try">
+            <span class="try-lbl">まずはお手本で試す</span>
+            <div class="chips">
+              {D.EXAMPLE_CHIPS.map((c) => <button type="button" class="chip" data-check-url={c.url}>{c.label}</button>)}
+            </div>
+            <span class="try-sep" aria-hidden="true"></span>
+            <a class="try-help" href="#learn"><Icon name="info" size={14} />OGPって？</a>
+          </div>
+
+          <div class="recent" id="recent" hidden>
+            <span class="try-lbl">最近チェックしたURL</span>
+            <div class="chips"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="wrap" aria-label="チェック結果">
+        <p class="tz-err" id="tz-err" role="alert" hidden><Icon name="warn" size={15} /><span></span></p>
+        <div id="results-slot">
+          <div class="results results-empty">
+            <div class="re-ic"><Icon name="eye" size={22} /></div>
+            <p class="re-t">URLを入れると、ここに結果が出ます</p>
+            <p class="re-d">点数・直すところ・6つのサービスでの見え方・修正コードを、まとめて表示します。</p>
+          </div>
+        </div>
+        <p class="disclaimer"><Icon name="info" size={14} /><span>診断結果は参考情報です。正確性・完全性を保証するものではなく、本ツールの利用により生じたいかなる損害についても、当社は一切の責任を負いかねます。サイトへの反映前には、必ずご自身で最終確認を行ってください。</span></p>
+      </section>
+    </div>
+
+    <!-- ===== 読みものゾーン ===== -->
+    <div class="read-zone" id="learn">
+      <div class="wrap">
+        <div class="read-head">
+          <div>
+            <div class="read-k"><Icon name="book" size={15} />はじめての方へ</div>
+            <h2 class="read-t">OGPのこと、ゆっくり知りたい方に</h2>
+          </div>
+          <nav class="read-toc" aria-label="このセクションの目次">
+            {[["#howto", "使い方"], ["#guide", "OGPの基本"], ["#glossary", "用語集"], ["#faq", "よくある質問"]].map(([h, l]) => <a href={h}>{l}</a>)}
+          </nav>
+        </div>
+      </div>
+
+      <section class="wrap sec sec-tight" id="howto" style="scroll-margin-top:72px" aria-label="使い方">
+        <div class="steps reveal">
+          {STEPS.map((s) => (
+            <div class="step">
+              <div class="step-n">{s.n}</div>
+              <div class="step-t">{s.t}</div>
+              <p class="step-d">{s.d}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section class="wrap sec">
+        <SectionHead id="guide" kicker="要点だけ" title="OGPの基本" sub="まずはこの2つをおさえれば大丈夫です。" />
+        <div class="guide">
+          {GUIDE.map((b, i) => (
+            <article class="g-item reveal">
+              <div class="g-num">{String(i + 1).padStart(2, "0")}</div>
+              <div class="g-body">
+                <h3 class="g-h">{b.h}</h3>
+                {b.p && <p class="g-p">{b.p}{b.ref && <>（参考：<a href={b.ref.href} target="_blank" rel="noopener">{b.ref.label}</a>）</>}</p>}
+                {b.list && (
+                  <ul class="g-list">
+                    {b.list.map((li) => <li><Icon name="check" size={14} style="color:var(--primary)" /><span>{li}</span></li>)}
+                  </ul>
+                )}
+              </div>
+            </article>
+          ))}
+        </div>
+        <p class="more-note">画像サイズ・フレームワーク別の書き方・よくあるつまずきを詳しく解説する記事を準備中です。</p>
+      </section>
+
+      <section class="band">
+        <div class="wrap sec">
+          <SectionHead id="glossary" kicker="用語集" title="OGPタグ辞典" sub="タグの意味と書き方を、辞書のように一覧で確認。行をクリックすると記述例が開きます。" />
+          <Glossary />
+        </div>
+      </section>
+
+      <section class="wrap sec">
+        <SectionHead id="faq" kicker="よくある質問" title="つまずきやすいポイント Q&A" sub="設定でよくある疑問とトラブルへの答えをまとめました。" />
+        <Faq items={D.FAQ} cats />
+      </section>
+
+      <section class="wrap sec sec-tight">
+        <SectionHead id="tools" kicker="関連ツール" title="あわせて使えるツール" sub="公開前のチェックに、いっしょに使える無料ツールです。" />
+        <div class="tools">
+          {related.map((t) => {
+            const soon = t.status === "soon";
+            const inner = (
+              <>
+                <span class="t-ic" style="color:var(--primary-ink)"><Icon name={TOOL_ICON[t.slug] || "code"} size={20} /></span>
+                <div class="t-main">
+                  <div class="t-name">{t.name}{t.isNew && <span class="lbl new">NEW</span>}{soon && <span class="lbl">準備中</span>}</div>
+                  <p class="t-desc">{t.desc}</p>
+                </div>
+                {!soon && <Icon name="arrow" size={17} class="t-arrow" />}
+              </>
+            );
+            return soon
+              ? <div class="t-row soon reveal" aria-disabled="true">{inner}</div>
+              : <a class="t-row reveal" href={"/" + t.slug + "/"}>{inner}</a>;
+          })}
+        </div>
+        <a class="more-link" href="/#tools">すべてのツールを見る<Icon name="arrow" size={15} /></a>
+      </section>
+
+      <section class="wrap sec sec-tight">
+        <SectionHead id="about" kicker="このツールについて" title="安心して使っていただくために" />
+        <div class={"about" + (HUB.SHOW_UPDATES ? "" : " solo")}>
+          <div>
+            <div class="log-h">概要</div>
+            <dl>
+              {ABOUT.map(([k, v]) => <div><dt>{k}</dt><dd>{v}</dd></div>)}
+            </dl>
+          </div>
+          {HUB.SHOW_UPDATES && (
+            <div class="about-log">
+              <div class="log-h">更新履歴</div>
+              {LOG.map((u) => (
+                <div class="log-r">
+                  <time>{u.date}</time>
+                  <span><span class={"log-k k-" + (u.kind === "新規" ? "new" : u.kind === "改善" ? "up" : "fix")}>{u.kind}</span>{u.text}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+    </div>
+
+    <Corp desc="OGPやSEOの設定を含むサイト制作から、業務に合わせた専用ツールの開発まで。まとめてお任せいただけます。" />
+  </main>
+
+  <Footer cols={FOOT} />
+</Base>
+
+<script>
+  import "../../scripts/ogp/page.js";
+</script>

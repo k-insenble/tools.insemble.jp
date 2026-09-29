@@ -1,0 +1,22 @@
+---
+import Icon from "./Icon.astro";
+
+interface Props {
+  desc: string;
+}
+const { desc } = Astro.props;
+---
+<section class="corp" id="corp">
+  <div class="wrap corp-in">
+    <div class="corp-main">
+      <div class="corp-k">運営会社について</div>
+      <h2 class="corp-t">このツールをつくっている、<br />札幌のWeb制作会社です。</h2>
+      <p class="corp-name"><span class="corp-logo">insemble</span><span class="corp-kana">インセンブル</span><span class="corp-sep"></span><span class="corp-loc">北海道 札幌市</span></p>
+      <p class="corp-d">{desc}</p>
+    </div>
+    <div class="corp-a">
+      <a class="btn btn-primary" href="https://www.insemble.co.jp/contact" target="_blank" rel="noopener">制作のご相談<Icon name="arrow" size={15} /></a>
+      <a class="btn btn-ghost" href="https://www.insemble.co.jp/" target="_blank" rel="noopener">会社サイトを見る</a>
+    </div>
+  </div>
+</section>

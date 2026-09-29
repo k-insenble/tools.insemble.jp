@@ -1,0 +1,12 @@
+---
+import Base from "../layouts/Base.astro";
+import "../styles/hub.css";
+---
+<Base title="ページが見つかりません｜insemble tools" description="お探しのページは見つかりませんでした。" path="/404/" noindex>
+  <main class="wrap" style="min-height:70vh;display:grid;place-content:center;text-align:center;gap:16px">
+    <p style="font-family:var(--font-display);font-weight:800;font-size:56px;color:var(--line-2);line-height:1">404</p>
+    <h1 style="font-family:var(--font-display);font-weight:800;font-size:22px">ページが見つかりませんでした</h1>
+    <p style="color:var(--muted)">URLが変わったか、削除された可能性があります。</p>
+    <p><a class="btn btn-primary" href="/">ツール一覧へ</a></p>
+  </main>
+</Base>

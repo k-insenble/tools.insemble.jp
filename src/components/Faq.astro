@@ -1,0 +1,34 @@
+---
+/* よくある質問。回答はすべて HTML に出しておき、JSON-LD（FAQPage）と同じ中身にする
+   開閉とカテゴリの切り替えは src/scripts/faq.js（最初の1問だけ開いておく） */
+import Icon from "./Icon.astro";
+
+interface Props {
+  items: { q: string; a: string; cat?: string }[];
+  cats?: boolean; // カテゴリの絞り込みを出す
+}
+const { items, cats = false } = Astro.props;
+const catList = cats ? ["すべて", ...new Set(items.map((f) => f.cat))] : [];
+---
+<div>
+  {cats && (
+    <div class="chips" style="margin-bottom:6px">
+      {catList.map((c, i) => <button type="button" class={"chip" + (i === 0 ? " on" : "")} data-faq-cat={c}>{c}</button>)}
+    </div>
+  )}
+  <div class="faq" data-faq>
+    {items.map((f, i) => (
+      <div class={"q" + (i === 0 ? " open" : "")} data-cat={f.cat}>
+        <button type="button" class="q-head" aria-expanded={i === 0 ? "true" : "false"} aria-controls={`faq-a-${i}`}>
+          <span class="q-mark" aria-hidden="true">Q</span>
+          <span class="q-text">{f.q}</span>
+          {cats && <span class="q-cat">{f.cat}</span>}
+          <Icon name="chevron" size={18} class="q-chev" />
+        </button>
+        <div class="q-a-wrap" id={`faq-a-${i}`}>
+          <div><p class="q-a">{f.a}</p></div>
+        </div>
+      </div>
+    ))}
+  </div>
+</div>

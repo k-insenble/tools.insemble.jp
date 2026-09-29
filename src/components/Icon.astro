@@ -1,0 +1,14 @@
+---
+import { svg, toolSvg } from "../lib/icons.js";
+
+interface Props {
+  name: string;
+  size?: number;
+  style?: string;
+  class?: string;
+  tool?: boolean; // ツール用のアイコン（ハブの一覧など）
+}
+const { name, size = 20, style = "", class: cls = "", tool = false } = Astro.props;
+const html = tool ? toolSvg(name, size, { style, cls }) : svg(name, size, { style, cls });
+---
+<Fragment set:html={html} />

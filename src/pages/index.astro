@@ -1,0 +1,262 @@
+---
+/* ツールハブ（React なし）
+   検索ファースト / 辞典的インデックス（脱カード）/ 学ぶ導線。動きは src/scripts/hub.js */
+import Base from "../layouts/Base.astro";
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
+import Corp from "../components/Corp.astro";
+import Icon from "../components/Icon.astro";
+import SectionHead from "../components/SectionHead.astro";
+import Faq from "../components/Faq.astro";
+import HUB from "../data/hub.js";
+import { ORG, PUBLISHER } from "../data/org.js";
+import "../styles/hub.css";
+
+const site = "https://tools.insemble.jp/";
+const jsonLd = [
+  ORG,
+  { "@context": "https://schema.org", "@type": "WebSite", name: "insemble tools", url: site, inLanguage: "ja", publisher: PUBLISHER },
+  { "@context": "https://schema.org", "@type": "ItemList", name: "無料Webツール", itemListElement: HUB.TOOLS.filter((t) => t.status === "live").map((t, i) => ({ "@type": "ListItem", position: i + 1, name: t.name, url: site + t.slug + "/" })) },
+  { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: HUB.FAQ.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })) },
+];
+
+const live = HUB.TOOLS.filter((t) => t.status === "live");
+const urlTools = live.filter((t) => t.url);
+const procLabel = (t: { url?: boolean }) => (t.url ? "URLを取得" : "端末内で処理");
+
+const NAV: [string, string][] = [["#tools", "ツール"], ["#learn", "学ぶ"], ...(HUB.SHOW_UPDATES ? [["#updates", "更新情報"] as [string, string]] : []), ["#faq", "よくある質問"]];
+const FOOT: { h: string; items: [string, string][] }[] = [
+  { h: "ツール", items: [...live.map((t) => [t.name, "/" + t.slug + "/"] as [string, string]), ["ツール一覧", "#tools"]] },
+  { h: "学ぶ", items: [["OGPタグ辞典", "/ogp/#glossary"], ...(HUB.SHOW_UPDATES ? [["更新情報", "#updates"] as [string, string]] : [])] },
+  { h: "サポート", items: [["よくある質問", "#faq"]] },
+  { h: "このサイトについて", items: [["運営会社（insemble）", "https://www.insemble.co.jp/"]] },
+];
+
+/* 人気ランキング／新着：公開中がこの数に満たないうちは、順位とタブを出さない */
+const RANK_MIN = 3;
+const ranked = live.length >= RANK_MIN;
+const lists = ranked
+  ? {
+      hot: live.filter((t) => t.hot).sort((a, b) => (a.hot ?? 0) - (b.hot ?? 0)), /* 解析導入後は uses 順に戻す */
+      new: [...live].sort((a, b) => (b.added || "").localeCompare(a.added || "")),
+    }
+  : { all: live };
+
+const cats = HUB.CATS.filter((c) => HUB.TOOLS.some((t) => t.cat === c.id));
+---
+<Base
+  title="Web制作・SEOの無料ツール集｜insemble tools"
+  description="OGPチェッカーをはじめ、Web制作とSEOに使える無料ツール集。登録不要・広告なしで、PCでもスマホでもブラウザだけで使えます。"
+  path="/"
+  jsonLd={jsonLd}
+>
+  <Header nav={NAV} />
+
+  <main>
+    <!-- ===== ヒーロー＝検索（URL貼り付けにも反応） ===== -->
+    <section class="hub-hero">
+      <div class="hero-glow"></div>
+      <div class="hero-deco far" aria-hidden="true">
+        <i style="width:9px;height:9px;left:13%;top:34%;background:var(--primary);opacity:.45"></i>
+        <i style="width:13px;height:13px;left:80%;top:56%;border:2px solid var(--primary);opacity:.3"></i>
+        <i style="width:5px;height:5px;left:52%;top:14%;background:oklch(0.66 0.10 162);opacity:.5"></i>
+      </div>
+      <div class="hero-deco near" aria-hidden="true">
+        <i style="width:7px;height:7px;left:86%;top:26%;background:oklch(0.62 0.09 235);opacity:.4"></i>
+        <i style="width:8px;height:8px;left:20%;top:64%;border:2px solid oklch(0.62 0.10 162);opacity:.35"></i>
+      </div>
+      <div class="wrap hub-hero-in">
+        <h1 class="hub-h1"><Icon name="sparkle" size={14} />無料で使える Web制作・SEOツール集</h1>
+        <p class="hub-title">Web制作の<span class="hl">こまごま</span>を、<br />ぜんぶここで。</p>
+        <p class="hub-sub">チェックしたいページのURLを入れるだけ。SNSでの見え方や、タグの抜けをすぐに確かめられます。登録なし・広告なし。</p>
+
+        <form class="hub-search" id="hub-search">
+          <Icon name="link" size={20} style="color:var(--muted)" />
+          <input type="text" inputmode="url" autocomplete="url" autocapitalize="none" spellcheck="false" placeholder="チェックしたいページのURL（https://〜）" aria-label="チェックするURL" aria-describedby="hub-meta" />
+          <button class="btn btn-primary hub-go" type="submit"><Icon name="bolt" size={16} />チェックする</button>
+        </form>
+        <div class="hub-meta" id="hub-meta">
+          <span class="hub-err" role="alert" hidden></span>
+          <span data-meta-note>
+            {urlTools.length === 1
+              ? <>いまは<strong>{urlTools[0].name}</strong>で診断します。URLで使えるツールは順次ふやしていきます。</>
+              : <>URLで使えるツールが<strong>{urlTools.length}</strong>つあります。入力後に選べます。</>}
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <div class="wrap" id="tools" style="scroll-margin-top:72px">
+      <!-- URLを入れたときの提案・お気に入り／最近使った は JS で出す -->
+      <div id="suggest-slot"></div>
+      <div id="my-slot"></div>
+
+      <!-- ===== 人気ランキング／新着 ===== -->
+      <div class="feat reveal">
+        <div class="feat-head">
+          {ranked ? (
+            <div class="feat-tabs" role="tablist">
+              {[["hot", "人気ランキング"], ["new", "新着"]].map(([k, l], i) => (
+                <button type="button" role="tab" aria-selected={i === 0 ? "true" : "false"} class={"feat-tab" + (i === 0 ? " on" : "")} data-feat={k}>{l}</button>
+              ))}
+            </div>
+          ) : (
+            <div class="feat-k">いま使えるツール<span class="feat-n">{live.length}</span></div>
+          )}
+          {/* 利用回数の表示：解析導入＋規約追記後に戻す（hub.js の uses） */}
+        </div>
+        {Object.entries(lists).map(([k, list], li) => (
+          <div class="feat-rows" data-feat-list={k} hidden={li > 0}>
+            {list.map((t, i) => (
+              <a class={"f-row" + (k === "hot" && i === 0 ? " top" : "")} href={"/" + t.slug + "/"} data-open={t.slug}>
+                <span class="f-top">
+                  <span class="f-ic"><Icon name={t.icon} size={22} tool /></span>
+                  {k === "hot" && <span class={"f-rank r" + (i + 1)}><b>{i + 1}</b>位</span>}
+                  {k !== "hot" && t.added && <span class="f-date">{t.added.replace(/-/g, "/")} 公開</span>}
+                </span>
+                <span class="f-name">{t.name}{t.isNew && <span class="lbl new">NEW</span>}</span>
+                <span class="f-desc">{t.desc}</span>
+                <span class="f-go">使ってみる<Icon name="arrow" size={15} /></span>
+              </a>
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+
+    <!-- ===== カタログ（カテゴリ絞り込み＋索引） ===== -->
+    <section class="band">
+      <div class="wrap sec">
+        <SectionHead kicker="ツール一覧" title="目的から引く索引" sub="カテゴリやツール名で絞り込めます。☆でお気に入りに追加できます。" />
+        <div class="cat-bar">
+          <label class="cat-search">
+            <Icon name="search" size={16} style="color:var(--muted)" />
+            <input id="cat-q" placeholder="ツール名で絞り込む" aria-label="ツール名で絞り込む" />
+            <button type="button" class="hub-clear" id="cat-clear" aria-label="クリア" hidden><Icon name="x" size={14} /></button>
+          </label>
+          <div class="chips">
+            <button type="button" class="chip on" data-cat="all">すべて</button>
+            {HUB.CATS.map((c) => <button type="button" class="chip" data-cat={c.id}>{c.label}</button>)}
+          </div>
+        </div>
+
+        <div class="no-hit" id="no-hit" hidden>
+          <p class="no-hit-t">「<span id="no-hit-q"></span>」に合うツールが見つかりませんでした</p>
+          <p class="no-hit-d">ツールは順次ふやしています。別のことばでも探してみてください。</p>
+          <div class="no-hit-a"><button type="button" class="btn btn-ghost" id="no-hit-clear">検索をクリア</button></div>
+        </div>
+
+        {cats.map((c) => {
+          const items = HUB.TOOLS.filter((t) => t.cat === c.id);
+          return (
+            <section class="cat reveal" data-cat-sec={c.id}>
+              <div class="cat-head">
+                <h3 class="cat-t">{c.label}</h3>
+                <span class="cat-note">{c.note}</span>
+                <span class="cat-n">{items.length}</span>
+              </div>
+              <div class="t-grid">
+                {items.map((t) => {
+                  const soon = t.status === "soon";
+                  return (
+                    <div class={"t-row" + (soon ? " soon" : "")} data-search={(t.name + t.desc + t.slug).toLowerCase()}>
+                      {soon ? (
+                        <a class="t-link" aria-disabled="true">
+                          <span class="t-ic"><Icon name={t.icon} size={19} tool /></span>
+                          <span class="t-body">
+                            <span class="t-name">{t.name}{t.isNew && <span class="lbl new">NEW</span>}<span class="lbl">準備中</span></span>
+                            <span class="t-desc">{t.desc}</span>
+                          </span>
+                        </a>
+                      ) : (
+                        <>
+                          <a class="t-link" href={"/" + t.slug + "/"} data-open={t.slug}>
+                            <span class="t-ic"><Icon name={t.icon} size={19} tool /></span>
+                            <span class="t-body">
+                              <span class="t-name">{t.name}{t.isNew && <span class="lbl new">NEW</span>}</span>
+                              <span class="t-desc">{t.desc}</span>
+                              <span class="t-proc">{procLabel(t)}</span>
+                            </span>
+                          </a>
+                          <button type="button" class="fav" data-fav={t.slug} aria-pressed="false" aria-label="お気に入りに追加"><Icon name="star" size={17} tool /></button>
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          );
+        })}
+      </div>
+    </section>
+
+    <!-- ===== 学ぶ ===== -->
+    <section class="wrap sec">
+      <SectionHead id="learn" kicker="学ぶ" title="使いながら、わかる" sub="ツールの下には必ず解説を置いています。用語の意味から直し方まで。" />
+      <div class="learn">
+        {HUB.LEARN.map((l) => {
+          const inner = (
+            <>
+              <span class="l-kind">{l.kind}</span>
+              <span class="l-main">
+                <span class="l-title">{l.title}{l.soon ? <span class="lbl">準備中</span> : <Icon name="arrow" size={15} />}</span>
+                <span class="l-desc">{l.desc}</span>
+              </span>
+            </>
+          );
+          return l.soon
+            ? <div class="l-row soon reveal" aria-disabled="true">{inner}</div>
+            : <a class="l-row reveal" href={l.href}>{inner}</a>;
+        })}
+      </div>
+    </section>
+
+    {HUB.SHOW_UPDATES && (
+      <section class="wrap sec sec-tight">
+        <SectionHead id="updates" kicker="更新情報" title="いつ、何が変わったか" sub="新しいツールの公開や改善を、日付つきで記録しています。" />
+        <div class="log">
+          {HUB.CHANGELOG.map((u) => {
+            const t = HUB.TOOLS.find((x) => x.slug === u.tool);
+            return (
+              <div class="log-row reveal">
+                <time class="log-date">{u.date}</time>
+                <span class={"log-kind k-" + (u.kind === "新規" ? "new" : u.kind === "改善" ? "up" : "fix")}>{u.kind}</span>
+                <span class="log-text">{u.text}</span>
+                {t && <a class="log-tool" href={"/" + t.slug + "/"}>{t.name}</a>}
+              </div>
+            );
+          })}
+        </div>
+      </section>
+    )}
+
+    <!-- ===== このサイトについて ===== -->
+    <section class="wrap sec">
+      <SectionHead id="about" kicker="このサイトについて" title="安心して使えること" />
+      <div class="steps reveal">
+        {HUB.TRUST.map((x, i) => (
+          <div class="step">
+            <div class="step-n">{String(i + 1).padStart(2, "0")}</div>
+            <div class="step-t">{x.t}</div>
+            <p class="step-d">{x.d}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <!-- ===== よくある質問 ===== -->
+    <section class="wrap sec sec-tight">
+      <SectionHead id="faq" kicker="はじめての方へ" title="よくある質問" />
+      <Faq items={HUB.FAQ} />
+    </section>
+
+    <Corp desc="サイト制作から、業務に合わせた専用ツールの開発まで。ここにあるツールと同じ手ざわりで、御社のためにつくります。" />
+  </main>
+
+  <Footer cols={FOOT} />
+</Base>
+
+<script>
+  import "../scripts/hub.js";
+</script>
