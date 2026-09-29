@@ -29,7 +29,6 @@ const FOOT: { h: string; items: [string, string][] }[] = [
   { h: "ツール", items: [...live.map((t) => [t.name, "/" + t.slug + "/"] as [string, string]), ["ツール一覧", "#tools"]] },
   { h: "学ぶ", items: [["OGPタグ辞典", "/ogp/#glossary"], ...(HUB.SHOW_UPDATES ? [["更新情報", "#updates"] as [string, string]] : [])] },
   { h: "サポート", items: [["よくある質問", "#faq"]] },
-  { h: "このサイトについて", items: [["運営会社（insemble）", "https://www.insemble.co.jp/"]] },
 ];
 
 /* 人気ランキング／新着：公開中がこの数に満たないうちは、順位とタブを出さない */

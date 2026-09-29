@@ -23,31 +23,29 @@ const jsonLd = [
   { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: D.FAQ.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })) },
 ];
 
-const NAV: [string, string][] = [["/#tools", "ツール一覧"], ["#guide", "使い方ガイド"], ["#faq", "よくある質問"]];
+const NAV: [string, string][] = [["/#tools", "ツール一覧"], ["#guide", "OGPの基本"], ["#faq", "よくある質問"]];
 const FOOT: { h: string; items: [string, string][] }[] = [
   { h: "ツール", items: [["OGPチェッカー", "/ogp/"], ["ツール一覧", "/#tools"]] },
   { h: "学ぶ", items: [["OGPの基本", "#guide"], ["OGPタグ辞典", "#glossary"], ["よくある質問", "#faq"]] },
-  { h: "サポート", items: [["ハブのよくある質問", "/#faq"]] },
-  { h: "このサイトについて", items: [["運営会社（insemble）", "https://www.insemble.co.jp/"]] },
 ];
 
 const STEPS = [
-  { n: "1", t: "URLを入力", d: "チェックしたいページのURLを貼り付けて「チェック」を押すだけ。" },
+  { n: "1", t: "URLを入力", d: "チェックしたいページのURLを貼り付けて「無料でチェック」を押すだけ。" },
   { n: "2", t: "表示を確認", d: "X・Facebook・LINE・Slackなど、各サービスでの見え方をその場でプレビュー。" },
   { n: "3", t: "コードで直す", d: "改善点とフレームワーク別のコードをコピーして、そのまま貼り付け。" },
 ];
 const GUIDE = D.GUIDE.filter((_, i) => [0, 2].includes(i));
 
-/* 関連ツール：公開中を先に、同じカテゴリ（メタタグ・SNS）から5つ */
-const TOOL_ICON: Record<string, string> = { noindex: "eye", "meta-tags": "tag", canonical: "link", "og-image": "eye", "share-link": "link", redirect: "arrow" };
+/* 関連ツール：公開中を先に、同じカテゴリ（メタタグ・SNS）から5つ。公開中がまだ無いうちは「これから公開」として出す */
 const related = HUB.TOOLS.filter((t) => t.slug !== "ogp" && (t.cat === "meta" || t.cat === "sns"))
   .sort((a, b) => (a.status === "live" ? -1 : 1) - (b.status === "live" ? -1 : 1)).slice(0, 5);
+const relatedLive = related.some((t) => t.status === "live");
 const LOG = HUB.CHANGELOG.filter((u) => u.tool === "ogp");
 
 const ABOUT = [
   ["しくみ", "入力されたURLのページを取得し、head 内の OGP・Twitterカード・canonical を読み取って採点します。"],
   ["保存", "入力したURLと結果は保存しません。最近チェックしたURLは、お使いのブラウザ内にだけ残ります。"],
-  ["確認できる場所", "X・Facebook・LINE・Slack・Discord・Microsoft Teams"],
+  ["対応サービス", "X・Facebook・LINE・Slack・Discord・Microsoft Teams"],
   ["料金", "無料・登録不要。PC・スマホどちらでも使えます。"],
   ["免責", "結果の正確性は保証しません。本ツールの利用により生じた損害について、当社は責任を負いかねます。"],
 ];
@@ -111,7 +109,7 @@ const ABOUT = [
           </form>
 
           <div class="try">
-            <span class="try-lbl">まずはお手本で試す</span>
+            <span class="try-lbl">試しにチェックしてみる</span>
             <div class="chips">
               {D.EXAMPLE_CHIPS.map((c) => <button type="button" class="chip" data-check-url={c.url}>{c.label}</button>)}
             </div>
@@ -148,7 +146,7 @@ const ABOUT = [
             <h2 class="read-t">OGPのこと、ゆっくり知りたい方に</h2>
           </div>
           <nav class="read-toc" aria-label="このセクションの目次">
-            {[["#howto", "使い方"], ["#guide", "OGPの基本"], ["#glossary", "用語集"], ["#faq", "よくある質問"]].map(([h, l]) => <a href={h}>{l}</a>)}
+            {[["#howto", "使い方"], ["#guide", "OGPの基本"], ["#glossary", "OGPタグ辞典"], ["#faq", "よくある質問"]].map(([h, l]) => <a href={h}>{l}</a>)}
           </nav>
         </div>
       </div>
@@ -166,7 +164,7 @@ const ABOUT = [
       </section>
 
       <section class="wrap sec">
-        <SectionHead id="guide" kicker="要点だけ" title="OGPの基本" sub="まずはこの2つをおさえれば大丈夫です。" />
+        <SectionHead id="guide" kicker="要点だけ" title="OGPの基本" sub="まずはここだけ読めば大丈夫です。" />
         <div class="guide">
           {GUIDE.map((b, i) => (
             <article class="g-item reveal">
@@ -199,13 +197,15 @@ const ABOUT = [
       </section>
 
       <section class="wrap sec sec-tight">
-        <SectionHead id="tools" kicker="関連ツール" title="あわせて使えるツール" sub="公開前のチェックに、いっしょに使える無料ツールです。" />
+        <SectionHead id="tools" kicker="関連ツール" {...(relatedLive
+          ? { title: "あわせて使えるツール", sub: "公開前のチェックに、いっしょに使える無料ツールです。" }
+          : { title: "これから公開するツール", sub: "公開前のチェックに役立つツールを準備しています。" })} />
         <div class="tools">
           {related.map((t) => {
             const soon = t.status === "soon";
             const inner = (
               <>
-                <span class="t-ic" style="color:var(--primary-ink)"><Icon name={TOOL_ICON[t.slug] || "code"} size={20} /></span>
+                <span class="t-ic"><Icon name={t.icon} size={20} tool /></span>
                 <div class="t-main">
                   <div class="t-name">{t.name}{t.isNew && <span class="lbl new">NEW</span>}{soon && <span class="lbl">準備中</span>}</div>
                   <p class="t-desc">{t.desc}</p>

@@ -350,7 +350,7 @@ code,pre{font-family:var(--font-mono)}
 .tools{border-top:1px solid var(--line)}
 .t-row{display:flex;align-items:center;gap:18px;padding:20px 6px;border-bottom:1px solid var(--line);text-decoration:none;transition:background .15s}
 .t-row:hover{background:oklch(0.985 0.012 60)}
-.t-ic{font-size:24px;flex-shrink:0;width:34px;text-align:center}
+.t-ic{font-size:24px;flex-shrink:0;width:34px;height:34px;display:grid;place-items:center;color:var(--primary-ink)}
 .t-main{flex:1;min-width:0}
 .t-name{font-family:var(--font-display);font-weight:800;font-size:16px;color:var(--ink);margin-bottom:3px}
 .t-row:hover .t-name{color:var(--primary-ink)}
@@ -363,7 +363,7 @@ code,pre{font-family:var(--font-mono)}
 .ftr::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--primary),oklch(0.66 0.10 162),var(--primary))}
 .ftr::after{content:"";position:absolute;inset:0;background-image:var(--grain);background-size:180px;opacity:.04;pointer-events:none;mix-blend-mode:overlay}
 .ftr-in,.ftr-bottom{position:relative;z-index:1}
-.ftr-in{display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr;gap:32px;padding-bottom:40px}
+.ftr-in{display:grid;grid-template-columns:1.6fr 1fr 1fr;gap:32px;padding-bottom:40px}
 .ftr-brand .logo{color:#fff;margin-bottom:14px}
 .ftr-tag{font-size:13px;color:oklch(0.74 0.012 215);line-height:1.7}
 .ftr-col .ftr-h{font-family:var(--font-display);font-weight:700;font-size:14px;color:#fff;margin-bottom:14px}
@@ -449,7 +449,10 @@ code,pre{font-family:var(--font-mono)}
 .tmeta svg{color:var(--primary)}
 .lbl{font-size:10px;font-weight:700;color:var(--muted);border:1px solid var(--line-2);border-radius:99px;padding:1px 8px;white-space:nowrap;font-family:var(--font-body);margin-left:8px}
 .lbl.new{color:#fff;background:oklch(0.52 0.10 162);border-color:transparent}
-.t-row.soon{opacity:.62}
+/* 準備中：点線アイコン＋灰色（文字は透明度で薄めない） */
+.t-row.soon{pointer-events:none}
+.t-row.soon .t-ic{color:var(--line-2);border:1.5px dashed var(--line-2);border-radius:10px}
+.t-row.soon .t-name{color:var(--muted)}
 .sec-tight{padding-top:var(--g-lg);padding-bottom:var(--g-lg)}
 .more-link{display:inline-flex;align-items:center;gap:6px;margin-top:var(--g-md);font-size:14px;font-weight:700;color:var(--primary-ink);text-decoration:none}
 .more-link svg{transition:.18s}.more-link:hover svg{transform:translateX(4px)}

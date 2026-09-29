@@ -7,7 +7,7 @@ const OGP_DATA = (function () {
   // ページの内容（解説・用語集・FAQ・機能）を変えたら更新する。画面の「最終更新」と JSON-LD の dateModified に使う
   const UPDATED = "2026-09-29";
 
-  // ---- 「まずはお手本で試す」 ------------------------------------
+  // ---- 「試しにチェックしてみる」 ------------------------------------
   const EXAMPLE_CHIPS = [
     { label: "insemble（運営会社のサイト）", url: "https://www.insemble.co.jp" },
   ];
