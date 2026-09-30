@@ -1,0 +1,145 @@
+---
+/* 利用規約・プライバシーポリシー
+   実際の動きと食い違わないように書く。ツールや計測タグを変えたら、ここも見直す
+   （OGPの取得：public/api/ogp.php／計測タグ：src/layouts/Base.astro） */
+import Base from "../../layouts/Base.astro";
+import Header from "../../components/Header.astro";
+import Footer from "../../components/Footer.astro";
+import { ORG } from "../../data/org.js";
+import "../../styles/hub.css";
+
+const UPDATED = "2026-09-30";
+const url = "https://tools.insemble.jp/terms/";
+const jsonLd = [
+  ORG,
+  { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [["ホーム", "https://tools.insemble.jp/"], ["利用規約・プライバシーポリシー", url]].map(([n, u], i) => ({ "@type": "ListItem", position: i + 1, name: n, item: u })) },
+];
+
+const NAV: [string, string][] = [["#terms", "利用規約"], ["#privacy", "プライバシーポリシー"], ["/#tools", "ツール一覧"]];
+const FOOT: { h: string; items: [string, string][] }[] = [
+  { h: "ツール", items: [["OGPチェッカー", "/ogp/"], ["ツール一覧", "/#tools"]] },
+];
+---
+<Base
+  title="利用規約・プライバシーポリシー｜insemble tools"
+  description="insemble tools を使うときの約束と、入力した内容・アクセス解析の情報の扱いについて。入力したURLと結果は保存しません。"
+  path="/terms/"
+  jsonLd={jsonLd}
+>
+  <Header nav={NAV} />
+
+  <main class="wrap terms">
+    <nav class="crumb" aria-label="パンくずリスト">
+      <ol>
+        <li><a href="/">ホーム</a></li>
+        <li><span aria-current="page">利用規約・プライバシーポリシー</span></li>
+      </ol>
+    </nav>
+
+    <h1>利用規約とプライバシーポリシー</h1>
+    <p class="lead">insemble tools（以下「このサイト」）を使うときの約束と、情報の扱いについてまとめています。このサイトを使った時点で、この内容に同意したものとします。</p>
+
+    <section id="terms" aria-labelledby="terms-h">
+      <h2 id="terms-h">利用規約</h2>
+
+      <h3>1. このサイトについて</h3>
+      <p>このサイトは、株式会社インセンブル（以下「運営者」）が運営する、Web制作に役立つ無料のツール集です。会員登録は要りません。個人でもお仕事でも、無料で使えます。</p>
+
+      <h3>2. してはいけないこと</h3>
+      <ul>
+        <li>プログラムなどで自動的に大量のチェックをするなど、このサイトやチェック先のサイトに大きな負担をかけること</li>
+        <li>自分に権限のないサイトやサーバーに、不正に入り込む目的で使うこと</li>
+        <li>法律に反すること、他人の権利を傷つけること</li>
+        <li>このサイトの運営をじゃますること</li>
+      </ul>
+      <p>短時間にたくさんのチェックがあったときは、しばらく使えなくなることがあります（1分あたりの回数に上限を設けています）。</p>
+
+      <h3>3. 結果について</h3>
+      <p>ツールの結果は、正確になるよう努めていますが、保証はできません。SNSやチャットツールでの実際の見え方は、各サービスの仕様や設定によって変わることがあります。公開前の最終確認は、各サービスの公式ツールなどでお願いします。</p>
+
+      <h3>4. 責任の範囲</h3>
+      <p>このサイトを使ったこと、または使えなかったことで生じた損害について、運営者は責任を負いません。ただし、運営者に故意または重大な過失がある場合は除きます。</p>
+
+      <h3>5. 内容の変更・停止</h3>
+      <p>ツールの内容は、予告なく変えたり、提供をやめたりすることがあります。</p>
+
+      <h3>6. 規約の変更</h3>
+      <p>この規約は、必要に応じて変えることがあります。変えた内容は、このページに載せた時点から有効になります。</p>
+
+      <h3>7. 準拠法</h3>
+      <p>この規約は、日本の法律に基づいて解釈します。</p>
+    </section>
+
+    <section id="privacy" aria-labelledby="privacy-h">
+      <h2 id="privacy-h">プライバシーポリシー</h2>
+
+      <h3>1. 入力した内容の扱い</h3>
+      <dl>
+        <dt>OGPチェッカーに入れたURL</dt>
+        <dd>ページの情報を読み取るために、運営者のサーバーを経由します。入れたURLと結果は保存しません。サーバーのアクセスの記録（アクセスログ）にも残らない形で送っています。</dd>
+        <dt>ID・パスワードの入ったURL</dt>
+        <dd>受け付けません。送る前に止めます。</dd>
+        <dt>「最近チェックしたURL」「お気に入り」など</dt>
+        <dd>お使いのブラウザの中にだけ保存します。運営者には届きません。ブラウザの「閲覧履歴データの削除」などで消せます。</dd>
+        <dt>回数の上限のための情報</dt>
+        <dd>短時間の大量利用を防ぐため、IPアドレス（インターネット上の住所のような番号）から作った元に戻せない値と、使った回数を、サーバーに約2分だけ置きます。その後は自動で消します。</dd>
+        <dt>プレビュー画像</dt>
+        <dd>チェックしたページの画像（og:image）は、お使いのブラウザが、画像のあるサイトから直接読み込みます。そのため、そのサイトには、あなたのIPアドレスなどが伝わります。このサイトから来たこと（参照元）は伝えません。</dd>
+      </dl>
+
+      <h3>2. アクセス解析</h3>
+      <p>サイトを良くするために、次のツールを使っています。どちらも Cookie（ブラウザに保存される小さなデータ）を使いますが、名前やメールアドレスなど、あなた個人を特定できる情報は集めません。</p>
+      <dl>
+        <dt>Google アナリティクス（Google LLC）</dt>
+        <dd>見られたページ、使った端末やブラウザの種類、おおまかな地域などを集計します。チェックしたURLは送りません。止めたいときは <a href="https://tools.google.com/dlpage/gaoptout?hl=ja" target="_blank" rel="noopener">Google アナリティクス オプトアウト アドオン</a> を使えます。データの扱いは <a href="https://policies.google.com/technologies/partner-sites?hl=ja" target="_blank" rel="noopener">Google のサービスを使用するサイトやアプリから収集した情報の Google による使用</a> をご覧ください。</dd>
+        <dt>Microsoft Clarity（Microsoft Corporation）</dt>
+        <dd>クリックやスクロールなどの操作と、その画面の様子を記録し、使いにくいところを見つけるのに使います。Microsoft Advertising とも連携しています。入力欄とチェック結果は伏せ字にして、中身は記録しません。データの扱いは <a href="https://privacy.microsoft.com/ja-jp/privacystatement" target="_blank" rel="noopener">Microsoft プライバシーに関する声明</a> をご覧ください。</dd>
+      </dl>
+      <p>Cookie は、ブラウザの設定で受け取らないようにできます。そうしても、ツールはそのまま使えます。</p>
+
+      <h3>3. そのほかの外部サービス</h3>
+      <p>見出しの文字（フォント）は Google Fonts から読み込んでいます。そのため、Google にIPアドレスなどが伝わります。</p>
+
+      <h3>4. 第三者への提供</h3>
+      <p>法律に基づく場合を除き、このサイトで得た情報を、ほかの会社や人に渡すことはありません。</p>
+
+      <h3>5. 運営会社のプライバシーポリシーとの関係</h3>
+      <p>このページは、このサイトのツールに特有の扱いを書いたものです。ここに書いていないこと（お問い合わせで受け取った個人情報の扱いや、開示の請求など）は、<a href="https://www.insemble.co.jp/privacy" target="_blank" rel="noopener">運営会社のプライバシーポリシー</a>に従います。</p>
+
+      <h3>6. お問い合わせ</h3>
+      <p>このページの内容についてのお問い合わせは、<a href="https://www.insemble.co.jp/contact" target="_blank" rel="noopener">運営会社のお問い合わせ窓口</a>からお願いします。</p>
+    </section>
+
+    <p class="updated">制定：<time datetime={UPDATED}>{UPDATED.replace(/-/g, "/")}</time></p>
+  </main>
+
+  <Footer cols={FOOT} />
+</Base>
+
+<script>
+  import "../../scripts/site.js";
+</script>
+
+<style>
+  /* 読みものなので、白地に罫線と余白だけで区切る（カードにしない） */
+  .terms{max-width:calc(var(--col-read) + 48px);padding-top:var(--g-md);padding-bottom:var(--g-xl);font-size:16px;line-height:1.85;color:var(--ink)}
+  .crumb ol{display:flex;flex-wrap:wrap;gap:6px;list-style:none;padding:0;margin:0 0 var(--g-md);font-size:13px;color:var(--muted)}
+  .crumb li+li::before{content:"/";margin-right:6px;color:var(--line-2)}
+  .crumb a{color:var(--muted)}
+  h1{font-family:var(--font-display);font-weight:800;font-size:clamp(24px,4vw,32px);line-height:1.35}
+  .lead{margin-top:var(--g-sm);color:var(--ink-2)}
+  section{margin-top:var(--g-xl);scroll-margin-top:88px}
+  h2{font-family:var(--font-display);font-weight:800;font-size:clamp(20px,3vw,24px);padding-bottom:var(--g-xs);border-bottom:3px solid var(--ink)}
+  h3{font-family:var(--font-display);font-weight:800;font-size:17px;margin-top:var(--g-lg);margin-bottom:var(--g-xs)}
+  p+p{margin-top:var(--g-xs)}
+  ul{padding-left:1.3em;list-style:disc}
+  ul+p{margin-top:var(--g-xs)}
+  li+li{margin-top:4px}
+  dl{border-top:1px solid var(--line)}
+  dl+p{margin-top:var(--g-sm)}
+  p+dl{margin-top:var(--g-sm)}
+  dt{font-weight:700;padding-top:var(--g-sm)}
+  dd{margin:4px 0 0;padding-bottom:var(--g-sm);border-bottom:1px solid var(--line)}
+  a{color:var(--primary-ink);text-underline-offset:3px}
+  .updated{margin-top:var(--g-xl);color:var(--muted);font-size:14px}
+</style>
