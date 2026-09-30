@@ -10,7 +10,8 @@ export async function checkUrl(url) {
   if (MOCK) return mock(url);
   let res;
   try {
-    res = await fetch(`${API}?url=${encodeURIComponent(url)}`, { headers: { Accept: "application/json" } });
+    // ?url= で送るとサーバーのアクセスログに残るので、本文（POST）で送る
+    res = await fetch(API, { method: "POST", headers: { Accept: "application/json" }, body: new URLSearchParams({ url }) });
   } catch (e) {
     throw new Error("通信できませんでした。時間をおいて、もう一度お試しください。");
   }

@@ -25,7 +25,7 @@ export const FRAMEWORKS = ["HTML", "Next.js", "Nuxt 3", "Vue 3", "Astro", "React
 export function frameworkCode(fw, d) {
   const t = d.previewTitle;
   const desc = d.previewDesc;
-  const img = (d.tags.find((x) => x.key === "og:image") || {}).value || "https://example.com/ogp.png";
+  const img = d.imageUrl || "https://example.com/ogp.png"; // タグ一覧の値だと未設定のとき「未設定」が入り、相対パスもそのまま出てしまう
   const site = d.siteName;
   const url = d.url;
   if (fw === "HTML") {

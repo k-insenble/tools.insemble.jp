@@ -5,6 +5,7 @@
  * 必要なもの：PHP 8.0 以上、cURL、DOM、mbstring（Xserver は標準で有効）
  *
  * 採点は src/lib/ogp.js（ブラウザ側）で行う。ここは取得だけ。
+ * URLは POST の本文で受け取る（GET の ?url= だとサーバーのアクセスログに30日残るため）。
  * 入力URLと結果は保存しない（レート制限用に、IPから作った元に戻せない値と回数だけを、公開フォルダの外に約2分だけ置く）。
  */
 
@@ -28,13 +29,21 @@ function out(array $a, int $code = 200): void {
 }
 function fail(string $msg, int $code = 400): void { out(['ok' => false, 'error' => $msg], $code); }
 
-if ($_SERVER['REQUEST_METHOD'] !== 'GET') fail('GET でリクエストしてください。', 405);
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') fail('POST でリクエストしてください。', 405);
+// ほかのサイトのページから、訪問者のブラウザ経由で使われないようにする（ヘッダーを送らない古いブラウザは通す）
+$sfs = $_SERVER['HTTP_SEC_FETCH_SITE'] ?? '';
+if ($sfs !== '' && $sfs !== 'same-origin') fail('このページからは使えません。', 403);
 
 /* ---- レート制限（簡易） ----
    置き場所は公開フォルダの外（Xserver なら /home/ユーザー/ドメイン/.ogp-rl）。作れないときは一時フォルダ。
+   サブドメインは public_html/サブドメイン名/ に置かれるので、「2つ上」ではなく public_html の1つ上を探す。
    ファイル名は秘密の鍵で作ったハッシュなので、ファイルからIPは割り出せない。古いものは毎回消す。 */
 function rl_dir(): string {
-  $d = dirname(__DIR__, 2) . '/.ogp-rl';
+  $pos = strpos(__DIR__, '/public_html/');
+  $d = ($pos !== false ? substr(__DIR__, 0, $pos) : dirname(__DIR__, 2)) . '/.ogp-rl';
+  // 念のため：公開フォルダの中になってしまうときは使わない
+  $root = realpath($_SERVER['DOCUMENT_ROOT'] ?? '') ?: '';
+  if (strpos($d, '/public_html/') !== false || ($root !== '' && strpos($d . '/', $root . '/') === 0)) return sys_get_temp_dir();
   if (is_dir($d) || @mkdir($d, 0700)) return $d;
   return sys_get_temp_dir();
 }
@@ -63,7 +72,7 @@ if ($fp && flock($fp, LOCK_EX)) {
 }
 
 /* ---- 入力チェック ---- */
-$url = trim((string) ($_GET['url'] ?? ''));
+$url = trim((string) ($_POST['url'] ?? ''));
 if ($url === '' || strlen($url) > 2048) fail('URLを入力してください。');
 if (!preg_match('#^https?://#i', $url)) $url = 'https://' . $url;
 $p = parse_url($url);
@@ -95,10 +104,17 @@ for ($i = 0; $i <= MAX_REDIRECTS; $i++) {
   $host = $u['host'] ?? '';
   $scheme = strtolower($u['scheme'] ?? '');
   if (!in_array($scheme, ['http', 'https'], true)) fail('このURLにはアクセスできません。');
+  // ID・パスワード入りのURLは使わない（相手のサーバーに送ったり、結果に残したりしないように）
+  if (isset($u['user']) || isset($u['pass'])) fail($i === 0
+    ? 'IDやパスワードが入ったURLはチェックできません。IDやパスワードを含まないURLで、もう一度お試しください。'
+    : 'このページは、チェックできないURLへ移動するため、確かめられません。');
   $ipAddr = $host ? resolve_public($host) : null;
   if (!$ipAddr) fail('このURLにはアクセスできません。公開されているページのURLを入力してください。');
   $port = (int) ($u['port'] ?? ($scheme === 'https' ? 443 : 80));
-  if (!in_array($port, PORTS, true)) fail('このURLにはアクセスできません。ふつうのWebページのURL（ポート番号なし）を入力してください。');
+  // 入力したURLか、転送先のURLかで伝え方を変える
+  if (!in_array($port, PORTS, true)) fail($i === 0
+    ? "このURLはチェックできません。URLの途中にある「:{$port}」を消して、もう一度お試しください。"
+    : 'このページは、チェックできないURLへ移動するため、確かめられません。');
 
   $buf = '';
   $ch = curl_init($cur);
@@ -131,7 +147,10 @@ for ($i = 0; $i <= MAX_REDIRECTS; $i++) {
   $body = $buf;
   break;
 }
-if ($status >= 300 && $status < 400) fail('リダイレクトが多すぎます。');
+// 移動が5回を超えたときと、移動先が書かれていないときで伝え方を変える
+if ($status >= 300 && $status < 400) fail($i > MAX_REDIRECTS
+  ? 'ページの移動が何度も続いたため、たどり着けませんでした。'
+  : "ページを開けませんでした（HTTP {$status}）。URLを確かめてください。");
 if ($status >= 400) fail("ページを開けませんでした（HTTP {$status}）。URLを確かめてください。");
 if ($body === '') fail('ページの中身が空でした。');
 

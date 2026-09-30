@@ -1,6 +1,10 @@
 # ===== insemble tools（Xserver / Apache） =====
 RewriteEngine On
 
+# サブドメインのフォルダは public_html/tools/ にあるので、insemble.jp/tools/… でも開けてしまう。tools.insemble.jp にそろえる
+RewriteCond %{HTTP_HOST} !^tools\.insemble\.jp$ [NC]
+RewriteRule ^(.*)$ https://tools.insemble.jp/$1 [L,R=301]
+
 # https に統一
 RewriteCond %{HTTPS} off
 RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]

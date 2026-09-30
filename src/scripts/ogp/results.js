@@ -182,7 +182,7 @@ function codeTab(d, s) {
 /* --- 結果をシェア --- */
 const TOOL = "https://tools.insemble.jp/ogp";
 function shareBar(d) {
-  const link = `${TOOL}/?url=${encodeURIComponent(d.url)}`;
+  const link = `${TOOL}/#url=${encodeURIComponent(d.url)}`; // # で渡すと、開いた人のURLもサーバーのログに残らない
   const text = `「${d.domain}」のOGPスコアは${d.score}点！SNSでの見え方を無料でチェックできます`;
   const enc = encodeURIComponent;
   const targets = [

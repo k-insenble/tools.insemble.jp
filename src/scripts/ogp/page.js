@@ -39,11 +39,19 @@ function setLoading(on) {
   });
 }
 
+// 日本語ドメインは xn-- の形にして送る。ID・パスワード入りのURLは、履歴やシェア用リンクに残らないよう送る前に止める
+function toFetchUrl(url) {
+  let u;
+  try { u = new URL(url); } catch (e) { throw new Error("URLの形が正しくありません。"); }
+  if (u.username || u.password) throw new Error("IDやパスワードが入ったURLはチェックできません。IDやパスワードを含まないURLで、もう一度お試しください。");
+  return u.href;
+}
+
 async function onCheck(url, scroll = true) {
   setLoading(true);
   errBox.hidden = true;
   try {
-    const data = await checkUrl(url);
+    const data = await checkUrl(toFetchUrl(url));
     renderResults(slot, data);
     const list = [url, ...loadRecent().filter((x) => x !== url)].slice(0, 5);
     saveRecent(list);
@@ -130,7 +138,8 @@ window.addEventListener("scroll", toggleMini, { passive: true });
 
 /* ---------- 起動 ---------- */
 drawRecent(loadRecent());
-const initialUrl = new URLSearchParams(location.search).get("url");
+// #url= で受け取る（ログに残らない）。前に配った ?url= のリンクも開けるように残す
+const initialUrl = new URLSearchParams(location.hash.slice(1)).get("url") || new URLSearchParams(location.search).get("url");
 if (initialUrl) {
   inputs.forEach((i) => { i.value = initialUrl; });
   onCheck(initialUrl, false);

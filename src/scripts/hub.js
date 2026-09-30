@@ -18,7 +18,8 @@ const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } cat
 let favs = load("hub.favs");
 let recent = load("hub.recent");
 
-const toolUrl = (t, url) => "/" + t.slug + "/" + (url ? "?url=" + encodeURIComponent(/^https?:\/\//i.test(url) ? url : "https://" + url) : "");
+// URLは #url= で渡す（# から後ろはサーバーに送られないので、アクセスログに残らない）
+const toolUrl = (t, url) => "/" + t.slug + "/" + (url ? "#url=" + encodeURIComponent(/^https?:\/\//i.test(url) ? url : "https://" + url) : "");
 function remember(slug) {
   recent = [slug, ...recent.filter((x) => x !== slug)].slice(0, 8);
   save("hub.recent", recent);

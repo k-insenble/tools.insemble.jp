@@ -35,7 +35,7 @@ npm run preview
 4. PHP のバージョンは **8.0 以上**（cURL・DOM・mbstring は Xserver 標準で有効）
 5. 公開後に確認
    - `https://tools.insemble.jp/ogp/` で自社サイトのURLをチェックできる
-   - `https://tools.insemble.jp/api/ogp.php?url=https://www.insemble.co.jp` が `{"ok":true,...}` を返す
+   - `https://tools.insemble.jp/ogp/#url=https://www.insemble.co.jp` を開くと、自動でチェックされる
    - `/sitemap-index.xml` が出ている
 
 ### 画像（入っています）
@@ -101,7 +101,7 @@ React などのUIライブラリは使っていません。画面は `.astro` �
 ```
 入力 → scripts/ogp/page.js submit()
      → lib/ogp.js checkUrl(url)
-         → GET /api/ogp.php?url=…   … <head> を取得して meta / title / canonical を返す
+         → POST /api/ogp.php（本文に url）… <head> を取得して meta / title / canonical を返す
          → analyze()                 … 点数・タグ一覧・直すところ（修正コード付き）を作る
      → scripts/ogp/results.js renderResults() で表示
 ```
@@ -112,7 +112,8 @@ React などのUIライブラリは使っていません。画面は `.astro` �
 - **セキュリティヘッダー**は `public/.htaccess`。CSP はいまは `Report-Only`（様子見）。違反が出ないのを確かめたら `Content-Security-Policy` に変える。HSTS も 1日から始めているので、問題がなければ1年に延ばす。
 - 点数のルールは `analyze()` にまとまっています。重み（減点）を変えるならここ。
 - 最近チェックしたURLは `localStorage`（`ogp.recent`）にだけ保存。
-- `?url=` 付きで開くと自動でチェックします。検索には canonical（`/ogp/`）でまとめます（noindex は併用しない）。
+- `#url=` 付きで開くと自動でチェックします（ハブの入力欄・シェア用リンクもこの形）。`#` から後ろはサーバーに送られないので、アクセスログにURLが残りません。API も POST で受けます。前に配った `?url=` のリンクも開けます。
+- ID・パスワード入りのURL（`https://id:pass@…`）は、履歴やシェア用リンクに残らないよう、送る前に止めます。
 
 ## ツールを追加するとき
 1. `src/data/hub.js` の `TOOLS` に1件追加（`status: "live"`、URLで使うなら `url: true`）
