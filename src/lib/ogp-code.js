@@ -16,6 +16,10 @@ export const PLATFORMS = {
 };
 
 // ---- フレームワーク別テンプレート ------------------------------
+// 値はチェックしたページから来る。利用者がそのまま貼るコードなので、書く場所に合わせて必ずエスケープする
+// q：JS の文字列（"…" ごと返す。</script> で閉じられないよう < も逃がす）／ a：HTML・JSX の属性値
+const q = (s) => JSON.stringify(String(s ?? "")).replace(/</g, "\\u003c");
+const a = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 export const FRAMEWORKS = ["HTML", "Next.js", "Nuxt 3", "Vue 3", "Astro", "React", "Remix"];
 
 export function frameworkCode(fw, d) {
@@ -27,73 +31,73 @@ export function frameworkCode(fw, d) {
   if (fw === "HTML") {
     return `<head>
   <!-- og:title -->
-  <meta property="og:title" content="${t}">
+  <meta property="og:title" content="${a(t)}">
   <!-- og:description -->
-  <meta property="og:description" content="${desc}">
+  <meta property="og:description" content="${a(desc)}">
   <!-- og:image -->
-  <meta property="og:image" content="${img}">
+  <meta property="og:image" content="${a(img)}">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:site_name" content="${site}">
+  <meta property="og:site_name" content="${a(site)}">
   <meta property="og:type" content="website">
-  <meta property="og:url" content="${url}">
+  <meta property="og:url" content="${a(url)}">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="${t}">
-  <meta name="twitter:description" content="${desc}">
-  <meta name="twitter:image" content="${img}">
-  <link rel="canonical" href="${url}">
+  <meta name="twitter:title" content="${a(t)}">
+  <meta name="twitter:description" content="${a(desc)}">
+  <meta name="twitter:image" content="${a(img)}">
+  <link rel="canonical" href="${a(url)}">
 </head>`;
   }
   if (fw === "Next.js") {
     return `// app/page.tsx — Next.js App Router
 export const metadata = {
-  title: "${t}",
-  description: "${desc}",
+  title: ${q(t)},
+  description: ${q(desc)},
   openGraph: {
-    title: "${t}",
-    description: "${desc}",
-    url: "${url}",
-    siteName: "${site}",
-    images: [{ url: "${img}", width: 1200, height: 630 }],
+    title: ${q(t)},
+    description: ${q(desc)},
+    url: ${q(url)},
+    siteName: ${q(site)},
+    images: [{ url: ${q(img)}, width: 1200, height: 630 }],
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "${t}",
-    description: "${desc}",
-    images: ["${img}"],
+    title: ${q(t)},
+    description: ${q(desc)},
+    images: [${q(img)}],
   },
 };`;
   }
   if (fw === "Nuxt 3") {
     return `<script setup>
 useSeoMeta({
-  title: "${t}",
-  ogTitle: "${t}",
-  description: "${desc}",
-  ogDescription: "${desc}",
-  ogImage: "${img}",
-  ogUrl: "${url}",
-  ogSiteName: "${site}",
+  title: ${q(t)},
+  ogTitle: ${q(t)},
+  description: ${q(desc)},
+  ogDescription: ${q(desc)},
+  ogImage: ${q(img)},
+  ogUrl: ${q(url)},
+  ogSiteName: ${q(site)},
   ogType: "website",
   twitterCard: "summary_large_image",
-  twitterImage: "${img}",
+  twitterImage: ${q(img)},
 })
 </script>`;
   }
   if (fw === "Vue 3") {
-    return `import { useHead } from '@unhead/vue'
+    return `import { useHead } from "@unhead/vue"
 
 useHead({
   meta: [
-    { property: 'og:title', content: '${t}' },
-    { property: 'og:description', content: '${desc}' },
-    { property: 'og:image', content: '${img}' },
-    { property: 'og:url', content: '${url}' },
-    { property: 'og:site_name', content: '${site}' },
-    { property: 'og:type', content: 'website' },
-    { name: 'twitter:card', content: 'summary_large_image' },
-    { name: 'twitter:image', content: '${img}' },
+    { property: "og:title", content: ${q(t)} },
+    { property: "og:description", content: ${q(desc)} },
+    { property: "og:image", content: ${q(img)} },
+    { property: "og:url", content: ${q(url)} },
+    { property: "og:site_name", content: ${q(site)} },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary_large_image" },
+    { name: "twitter:image", content: ${q(img)} },
   ],
 })`;
   }
@@ -103,14 +107,14 @@ useHead({
 const { } = Astro.props;
 ---
 <head>
-  <meta property="og:title" content="${t}" />
-  <meta property="og:description" content="${desc}" />
-  <meta property="og:image" content="${img}" />
-  <meta property="og:url" content="${url}" />
-  <meta property="og:site_name" content="${site}" />
+  <meta property="og:title" content="${a(t)}" />
+  <meta property="og:description" content="${a(desc)}" />
+  <meta property="og:image" content="${a(img)}" />
+  <meta property="og:url" content="${a(url)}" />
+  <meta property="og:site_name" content="${a(site)}" />
   <meta property="og:type" content="website" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:image" content="${img}" />
+  <meta name="twitter:image" content="${a(img)}" />
 </head>`;
   }
   if (fw === "React") {
@@ -118,27 +122,27 @@ const { } = Astro.props;
 import { Helmet } from "react-helmet-async";
 
 <Helmet>
-  <meta property="og:title" content="${t}" />
-  <meta property="og:description" content="${desc}" />
-  <meta property="og:image" content="${img}" />
-  <meta property="og:url" content="${url}" />
-  <meta property="og:site_name" content="${site}" />
+  <meta property="og:title" content="${a(t)}" />
+  <meta property="og:description" content="${a(desc)}" />
+  <meta property="og:image" content="${a(img)}" />
+  <meta property="og:url" content="${a(url)}" />
+  <meta property="og:site_name" content="${a(site)}" />
   <meta property="og:type" content="website" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:image" content="${img}" />
+  <meta name="twitter:image" content="${a(img)}" />
 </Helmet>`;
   }
   if (fw === "Remix") {
     return `// app/routes/_index.tsx
 export const meta = () => [
-  { property: "og:title", content: "${t}" },
-  { property: "og:description", content: "${desc}" },
-  { property: "og:image", content: "${img}" },
-  { property: "og:url", content: "${url}" },
-  { property: "og:site_name", content: "${site}" },
+  { property: "og:title", content: ${q(t)} },
+  { property: "og:description", content: ${q(desc)} },
+  { property: "og:image", content: ${q(img)} },
+  { property: "og:url", content: ${q(url)} },
+  { property: "og:site_name", content: ${q(site)} },
   { property: "og:type", content: "website" },
   { name: "twitter:card", content: "summary_large_image" },
-  { name: "twitter:image", content: "${img}" },
+  { name: "twitter:image", content: ${q(img)} },
 ];`;
   }
   return "";

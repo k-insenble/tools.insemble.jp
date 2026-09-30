@@ -5,17 +5,20 @@
  * 必要なもの：PHP 8.0 以上、cURL、DOM、mbstring（Xserver は標準で有効）
  *
  * 採点は src/lib/ogp.js（ブラウザ側）で行う。ここは取得だけ。
- * 入力URLと結果は保存しない（レート制限用に、IPのハッシュと回数だけを一時フォルダに1分間置く）。
+ * 入力URLと結果は保存しない（レート制限用に、IPから作った元に戻せない値と回数だけを、公開フォルダの外に約2分だけ置く）。
  */
 
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
 header('X-Robots-Tag: noindex, nofollow');
 header('X-Content-Type-Options: nosniff');
+header("Content-Security-Policy: default-src 'none'; frame-ancestors 'none'");
 
 const MAX_BYTES = 2 * 1024 * 1024; // 2MB まで読む
 const MAX_REDIRECTS = 5;
 const RATE_PER_MIN = 20;            // 1IPあたり1分20回まで
+const PORTS = [80, 443];            // 接続してよいポート
+const META_MAX = 60;                // 返すメタタグの数の上限
 const UA = 'Mozilla/5.0 (compatible; insemble-tools-ogp/1.0; +https://tools.insemble.jp/ogp/)';
 
 function out(array $a, int $code = 200): void {
@@ -27,12 +30,37 @@ function fail(string $msg, int $code = 400): void { out(['ok' => false, 'error' 
 
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') fail('GET でリクエストしてください。', 405);
 
-/* ---- レート制限（簡易） ---- */
-$ip = $_SERVER['REMOTE_ADDR'] ?? '0';
-$bucket = sys_get_temp_dir() . '/ogp_rl_' . hash('sha256', $ip . date('YmdHi'));
-$n = is_file($bucket) ? (int) file_get_contents($bucket) : 0;
-if ($n >= RATE_PER_MIN) fail('短時間にたくさんのチェックがありました。1分ほど待ってから、もう一度お試しください。', 429);
-@file_put_contents($bucket, (string) ($n + 1), LOCK_EX);
+/* ---- レート制限（簡易） ----
+   置き場所は公開フォルダの外（Xserver なら /home/ユーザー/ドメイン/.ogp-rl）。作れないときは一時フォルダ。
+   ファイル名は秘密の鍵で作ったハッシュなので、ファイルからIPは割り出せない。古いものは毎回消す。 */
+function rl_dir(): string {
+  $d = dirname(__DIR__, 2) . '/.ogp-rl';
+  if (is_dir($d) || @mkdir($d, 0700)) return $d;
+  return sys_get_temp_dir();
+}
+function rl_secret(string $dir): string {
+  $f = $dir . '/ogp_rl_key';
+  $k = is_file($f) ? (string) file_get_contents($f) : '';
+  if (strlen($k) < 32) { $k = bin2hex(random_bytes(32)); @file_put_contents($f, $k, LOCK_EX); @chmod($f, 0600); }
+  return $k;
+}
+// IPv6 は /64 でまとめて数える（1台でアドレスを変えながら回避されないように）
+function rl_client(string $ip): string {
+  $bin = @inet_pton($ip);
+  return ($bin !== false && strlen($bin) === 16) ? bin2hex(substr($bin, 0, 8)) : $ip;
+}
+$rlDir = rl_dir();
+foreach (glob($rlDir . '/ogp_rl_*.cnt') ?: [] as $f) if (@filemtime($f) < time() - 120) @unlink($f);
+$bucket = $rlDir . '/ogp_rl_' . hash_hmac('sha256', rl_client($_SERVER['REMOTE_ADDR'] ?? '0') . '|' . date('YmdHi'), rl_secret($rlDir)) . '.cnt';
+// 読んで足して書くまでをロックして、同時アクセスですり抜けないようにする
+$fp = @fopen($bucket, 'c+');
+if ($fp && flock($fp, LOCK_EX)) {
+  $n = (int) stream_get_contents($fp);
+  if ($n < RATE_PER_MIN) { ftruncate($fp, 0); rewind($fp); fwrite($fp, (string) ($n + 1)); fflush($fp); }
+  flock($fp, LOCK_UN);
+  fclose($fp);
+  if ($n >= RATE_PER_MIN) fail('短時間にたくさんのチェックがありました。1分ほど待ってから、もう一度お試しください。', 429);
+}
 
 /* ---- 入力チェック ---- */
 $url = trim((string) ($_GET['url'] ?? ''));
@@ -50,8 +78,10 @@ function resolve_public(string $host): ?string {
     foreach ($v6 as $r) if (!empty($r['ipv6'])) $ips[] = $r['ipv6'];
   }
   if (!$ips) return null;
+  // PHP 8.2 以上は GLOBAL_RANGE（共有アドレス 100.64.0.0/10 なども弾く）。古い PHP は従来の組み合わせ
+  $flags = defined('FILTER_FLAG_GLOBAL_RANGE') ? FILTER_FLAG_GLOBAL_RANGE : (FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE);
   foreach ($ips as $ip) {
-    if (!filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) return null;
+    if (!filter_var($ip, FILTER_VALIDATE_IP, $flags)) return null;
   }
   return $ips[0];
 }
@@ -67,7 +97,8 @@ for ($i = 0; $i <= MAX_REDIRECTS; $i++) {
   if (!in_array($scheme, ['http', 'https'], true)) fail('このURLにはアクセスできません。');
   $ipAddr = $host ? resolve_public($host) : null;
   if (!$ipAddr) fail('このURLにはアクセスできません。公開されているページのURLを入力してください。');
-  $port = $u['port'] ?? ($scheme === 'https' ? 443 : 80);
+  $port = (int) ($u['port'] ?? ($scheme === 'https' ? 443 : 80));
+  if (!in_array($port, PORTS, true)) fail('このURLにはアクセスできません。ふつうのWebページのURL（ポート番号なし）を入力してください。');
 
   $buf = '';
   $ch = curl_init($cur);
@@ -109,8 +140,11 @@ $head = preg_match('#<head\b[^>]*>(.*?)(</head>|$)#is', $body, $m) ? $m[1] : $bo
 $cs = 'UTF-8';
 if (preg_match('#<meta[^>]+charset=["\']?\s*([\w-]+)#i', $head, $c)) $cs = strtoupper($c[1]);
 if ($cs !== 'UTF-8' && $cs !== 'UTF8') {
-  $conv = @mb_convert_encoding($head, 'UTF-8', $cs);
-  if ($conv !== false) $head = $conv;
+  // PHP 8 は知らない文字コード名だと例外を投げる（@ では止まらない）ので、そのときは変換せずに読む
+  try {
+    $conv = mb_convert_encoding($head, 'UTF-8', $cs);
+    if ($conv !== false) $head = $conv;
+  } catch (ValueError $e) {}
 }
 
 /* ---- 解析 ---- */
@@ -121,14 +155,16 @@ $doc->loadHTML('<?xml encoding="UTF-8"><html><head>' . $head . '</head><body></b
 $meta = [];
 foreach ($doc->getElementsByTagName('meta') as $el) {
   $k = strtolower(trim($el->getAttribute('property') ?: $el->getAttribute('name')));
-  if ($k === '' || isset($meta[$k])) continue;
+  // 採点に使う og:* / twitter:* / description だけを、数を決めて返す
+  if (!preg_match('#^(?:(?:og|twitter):[a-z0-9:_.-]{1,50}|description)$#', $k) || isset($meta[$k])) continue;
+  if (count($meta) >= META_MAX) break;
   $meta[$k] = mb_substr(trim($el->getAttribute('content')), 0, 1000);
 }
 $titleEl = $doc->getElementsByTagName('title')->item(0);
 $title = $titleEl ? mb_substr(trim($titleEl->textContent), 0, 300) : '';
 $canonical = '';
 foreach ($doc->getElementsByTagName('link') as $l) {
-  if (strtolower(trim($l->getAttribute('rel'))) === 'canonical') { $canonical = trim($l->getAttribute('href')); break; }
+  if (strtolower(trim($l->getAttribute('rel'))) === 'canonical') { $canonical = mb_substr(trim($l->getAttribute('href')), 0, 2048); break; }
 }
 
 out([

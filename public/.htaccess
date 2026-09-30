@@ -20,4 +20,12 @@ ErrorDocument 404 /404.html
   </If>
   Header always set X-Content-Type-Options "nosniff"
   Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set X-Frame-Options "DENY"
+  Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
+  # HSTS：一度覚えられると取り消しにくいので 1日 から。問題がなければ 31536000（1年）へ
+  Header always set Strict-Transport-Security "max-age=86400"
+  # CSP：まずは Report-Only（止めずに、違反をブラウザのコンソールに出すだけ）。
+  # 本番で数日様子を見て違反が出なければ、ヘッダー名を Content-Security-Policy に変える。
+  # style の unsafe-inline は結果パネルの style 属性のため。img の https: はチェックしたページの og:image のため。
+  Header always set Content-Security-Policy-Report-Only "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
 </IfModule>
