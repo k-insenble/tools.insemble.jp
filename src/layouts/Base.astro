@@ -15,6 +15,10 @@ interface Props {
 const { title, description, path, ogTitle, ogDescription, ogImage, jsonLd, noindex = false } = Astro.props;
 const canonical = new URL(path, Astro.site).href;
 const image = ogImage ?? new URL("/og-image.png", Astro.site).href;
+// 計測タグ（Google アナリティクス・Microsoft Clarity）。本番ビルドだけで読み込む（手元の開発では数えない）
+// タグの中身を変えると、public/.htaccess の CSP のハッシュとずれる（Report-Only なので警告が出るだけ。直し方は README）
+// Clarity の録画では、入れたURLとチェック結果を data-clarity-mask で伏せ字にしている（ogp/index.astro・index.astro）
+const useTags = import.meta.env.PROD;
 ---
 <!doctype html>
 <html lang="ja">
@@ -46,6 +50,24 @@ const image = ogImage ?? new URL("/og-image.png", Astro.site).href;
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@800&display=swap" rel="stylesheet" />
     {jsonLd && <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />}
+    {useTags && <script is:inline async src="https://www.googletagmanager.com/gtag/js?id=G-BE85334L8G"></script>}
+    {useTags && <script is:inline>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      // チェックしたURL（#url= / ?url=）を Google に送らないよう、そこだけ外して送る（utm_ などの計測用の値は残す）
+      var gaClean = function (u) { try { var x = new URL(u); x.hash = ''; x.searchParams.delete('url'); return x.href; } catch (e) { return ''; } };
+      var gaOpt = { page_location: gaClean(location.href) };
+      if (document.referrer) gaOpt.page_referrer = gaClean(document.referrer);
+      gtag('config', 'G-BE85334L8G', gaOpt);
+    </script>}
+    {useTags && <script is:inline>
+      (function(c,l,a,r,i,t,y){
+        c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+        t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+        y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+      })(window, document, "clarity", "script", "yqb8racgfy");
+    </script>}
   </head>
   <body>
     <div class="app-root"><slot /></div>

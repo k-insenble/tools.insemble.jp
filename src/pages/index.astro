@@ -69,7 +69,7 @@ const cats = HUB.CATS.filter((c) => HUB.TOOLS.some((t) => t.cat === c.id));
         <p class="hub-title">Web制作の<span class="hl">こまごま</span>を、<br />ぜんぶここで。</p>
         <p class="hub-sub">チェックしたいページのURLを入れるだけ。SNSでの見え方や、タグの抜けをすぐに確かめられます。登録なし・広告なし。</p>
 
-        <form class="hub-search" id="hub-search">
+        <form class="hub-search" id="hub-search" data-clarity-mask="True">
           <Icon name="link" size={20} style="color:var(--muted)" />
           <input type="text" inputmode="url" autocomplete="url" autocapitalize="none" spellcheck="false" placeholder="チェックしたいページのURL（https://〜）" aria-label="チェックするURL" aria-describedby="hub-meta" />
           <button class="btn btn-primary hub-go" type="submit"><Icon name="bolt" size={16} />チェックする</button>
@@ -87,7 +87,7 @@ const cats = HUB.CATS.filter((c) => HUB.TOOLS.some((t) => t.cat === c.id));
 
     <div class="wrap" id="tools" style="scroll-margin-top:72px">
       <!-- URLを入れたときの提案・お気に入り／最近使った は JS で出す -->
-      <div id="suggest-slot"></div>
+      <div id="suggest-slot" data-clarity-mask="True"></div>
       <div id="my-slot"></div>
 
       <!-- ===== 人気ランキング／新着 ===== -->

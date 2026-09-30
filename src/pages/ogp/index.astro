@@ -61,7 +61,7 @@ const ABOUT = [
 
   <!-- スクロール中も再チェックできる小さなURL欄 -->
   <div class="minibar" aria-hidden="true">
-    <form class="wrap minibar-in" data-checker>
+    <form class="wrap minibar-in" data-checker data-clarity-mask="True">
       <span class="minibar-k">OGPチェッカー</span>
       <div class="minibar-field">
         <Icon name="link" size={15} style="color:var(--muted)" />
@@ -97,7 +97,7 @@ const ABOUT = [
           <p class="hero-title">シェアする前に、<span class="hl">見え方</span>をたしかめよう。</p>
           <p class="tz-sub">X・LINE・Slackなど6つのサービスでの表示を確認して、足りないタグのコードまで出します。</p>
 
-          <form class="checker" data-checker>
+          <form class="checker" data-checker data-clarity-mask="True">
             <div class="checker-field">
               <Icon name="link" size={18} style="color:var(--muted)" />
               <input data-url-input type="text" inputmode="url" autocomplete="url" autocapitalize="none" spellcheck="false" placeholder="あなたのサイトのURL（https://〜）" aria-label="チェックするURL" autofocus />
@@ -117,7 +117,7 @@ const ABOUT = [
             <a class="try-help" href="#learn"><Icon name="info" size={14} />OGPって？</a>
           </div>
 
-          <div class="recent" id="recent" hidden>
+          <div class="recent" id="recent" hidden data-clarity-mask="True">
             <span class="try-lbl">最近チェックしたURL</span>
             <div class="chips"></div>
           </div>
@@ -126,7 +126,7 @@ const ABOUT = [
 
       <section class="wrap" aria-label="チェック結果">
         <p class="tz-err" id="tz-err" role="alert" hidden><Icon name="warn" size={15} /><span></span></p>
-        <div id="results-slot">
+        <div id="results-slot" data-clarity-mask="True">
           <div class="results results-empty">
             <div class="re-ic"><Icon name="eye" size={22} /></div>
             <p class="re-t">URLを入れると、ここに結果が出ます</p>

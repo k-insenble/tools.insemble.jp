@@ -53,6 +53,7 @@ async function onCheck(url, scroll = true) {
   try {
     const data = await checkUrl(toFetchUrl(url));
     renderResults(slot, data);
+    slot.hidden = false;
     const list = [url, ...loadRecent().filter((x) => x !== url)].slice(0, 5);
     saveRecent(list);
     drawRecent(list);
@@ -60,6 +61,8 @@ async function onCheck(url, scroll = true) {
   } catch (e) {
     $("span", errBox).textContent = e && e.message ? e.message : "ページを取得できませんでした。URLを確かめて、もう一度お試しください。";
     errBox.hidden = false;
+    // 前の結果が残っていると「今回チェックできた」ように見えるので、エラーのあいだは隠す
+    slot.hidden = true;
   } finally {
     setLoading(false);
   }
@@ -141,6 +144,11 @@ drawRecent(loadRecent());
 // #url= で受け取る（ログに残らない）。前に配った ?url= のリンクも開けるように残す
 const initialUrl = new URLSearchParams(location.hash.slice(1)).get("url") || new URLSearchParams(location.search).get("url");
 if (initialUrl) {
+  // 受け取ったらアドレスバーから外す（計測ツールにページのURLとして残らないように。utm_ などはそのまま）
+  const here = new URL(location.href);
+  here.hash = "";
+  here.searchParams.delete("url");
+  history.replaceState(null, "", here.pathname + here.search);
   inputs.forEach((i) => { i.value = initialUrl; });
   onCheck(initialUrl, false);
 }

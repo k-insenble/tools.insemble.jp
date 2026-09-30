@@ -28,8 +28,10 @@ ErrorDocument 404 /404.html
   Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
   # HSTS：一度覚えられると取り消しにくいので 1日 から。問題がなければ 31536000（1年）へ
   Header always set Strict-Transport-Security "max-age=86400"
-  # CSP：まずは Report-Only（止めずに、違反をブラウザのコンソールに出すだけ）。
-  # 本番で数日様子を見て違反が出なければ、ヘッダー名を Content-Security-Policy に変える。
+  # CSP：Report-Only のまま据え置く（止めずに、違反をブラウザのコンソールに出すだけ。守りの主役は esc()）。
+  # 本番に切り替えると、計測タグを変えるたびにハッシュの付け直しが必須になるので切り替えない。
   # style の unsafe-inline は結果パネルの style 属性のため。img の https: はチェックしたページの og:image のため。
-  Header always set Content-Security-Policy-Report-Only "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+  # googletagmanager / google-analytics は Google アナリティクス、clarity.ms / c.bing.com は Microsoft Clarity のため。
+  # 'sha256-…' は Base.astro に直接書いた計測タグ（GA・Clarity の2つ）だけを許す印（タグを変えたら付け直す。手順は README）。
+  Header always set Content-Security-Policy-Report-Only "default-src 'self'; script-src 'self' 'sha256-63ay2mWSJZ/2akrBqWe+LvWs9NtpgmZaz5S6wZa43IM=' 'sha256-sU04W4Zt7VoiF6S4Rh2k1VzKwDLoRkhJSGBfz0IQwwQ=' https://*.googletagmanager.com https://*.clarity.ms; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://*.clarity.ms https://c.bing.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
 </IfModule>

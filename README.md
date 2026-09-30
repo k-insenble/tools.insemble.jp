@@ -109,7 +109,12 @@ React などのUIライブラリは使っていません。画面は `.astro` �
 - **ogp.php の安全対策**：http/https のみ・ポートは 80/443 のみ、プライベートIP・予約IPへの接続を拒否（PHP 8.2 以上は `FILTER_FLAG_GLOBAL_RANGE`、DNSの結果を固定して接続）、リダイレクトは1回ごとに検証（最大5回）、`</head>` か 2MB で読み込みを打ち切り、返すメタタグは og:* / twitter:* / description の60件まで、1IPあたり1分20回まで（IPv6 は /64 単位）。
 - 入力URLと結果は**保存しません**。レート制限用に、IPから秘密の鍵で作ったハッシュ（元のIPには戻せない）と回数だけを、公開フォルダの外の `.ogp-rl/` に置き、2分たったものは次のアクセスで消します（作れない環境では一時フォルダ）。
 - **フレームワーク別コード**（`lib/ogp-code.js`）は、取得した値を JS の文字列なら `q()`、HTML・JSX の属性なら `a()` を通して埋め込む。利用者がそのまま貼るコードなので、テンプレートを足すときも必ず通す。
-- **セキュリティヘッダー**は `public/.htaccess`。CSP はいまは `Report-Only`（様子見）。違反が出ないのを確かめたら `Content-Security-Policy` に変える。HSTS も 1日から始めているので、問題がなければ1年に延ばす。
+- **計測タグ（Google アナリティクス・Microsoft Clarity）**は `src/layouts/Base.astro` の `<head>` に直接書いてある（本番ビルドだけ）。
+  - GA は、チェックしたURL（`#url=` / `?url=`）だけを外して送る。`utm_` などの計測用の値は残す。
+  - Clarity の録画では、入力欄・最近チェックしたURL・結果パネル・ハブの候補を `data-clarity-mask` で伏せ字にしている。`#url=` で受け取ったURLは、読み取ったらアドレスバーから外す。
+  - CSP はこのタグの中身をハッシュ値で許可している。タグを変えるとずれるが、CSP は Report-Only なので警告が出るだけで壊れない。直すときは `npm run build` のあとに下を実行し、出た値で `.htaccess` の `'sha256-…'` を置き換える。
+    `node -e 'const h=require("fs").readFileSync("dist/index.html","utf8");const m=[...h.matchAll(/<script>([\s\S]*?)<\/script>/g)];for(const x of m)console.log("sha256-"+require("crypto").createHash("sha256").update(x[1]).digest("base64"))'`
+- **セキュリティヘッダー**は `public/.htaccess`。CSP は `Report-Only`（止めずに警告を出すだけ）のまま据え置く。表示のエスケープ（`esc()`）を主な守りにしていて、CSP は保険。本番（`Content-Security-Policy`）に切り替えると、タグを変えるたびにハッシュ値の付け直しが必須になるので、切り替えない。HSTS は 1日から始めているので、問題がなければ1年に延ばす。
 - 点数のルールは `analyze()` にまとまっています。重み（減点）を変えるならここ。
 - 最近チェックしたURLは `localStorage`（`ogp.recent`）にだけ保存。
 - `#url=` 付きで開くと自動でチェックします（ハブの入力欄・シェア用リンクもこの形）。`#` から後ろはサーバーに送られないので、アクセスログにURLが残りません。API も POST で受けます。前に配った `?url=` のリンクも開けます。
