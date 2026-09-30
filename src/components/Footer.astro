@@ -27,7 +27,7 @@ const ext = (href: string) => href.startsWith("http");
     ))}
   </div>
   <div class="wrap ftr-bottom">
-    <span>© 2026 insemble</span>
+    <span class="ftr-legal">© 2026 insemble<a href="/terms/">利用規約・プライバシーポリシー</a></span>
     <a class="ftr-corp" href="https://www.insemble.co.jp/" target="_blank" rel="noopener">
       <span class="ftr-corp-k">運営</span>
       <span class="ftr-corp-name">insemble<span class="ftr-corp-kana">インセンブル</span></span>
@@ -35,3 +35,9 @@ const ext = (href: string) => href.startsWith("http");
     </a>
   </div>
 </footer>
+
+<style>
+  .ftr-legal{display:inline-flex;flex-wrap:wrap;align-items:center;gap:6px 18px}
+  .ftr-legal a{color:oklch(0.80 0.012 215);text-underline-offset:3px}
+  .ftr-legal a:hover{color:#fff}
+</style>

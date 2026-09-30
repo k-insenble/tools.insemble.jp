@@ -30,7 +30,7 @@ npm run preview
 
 1. サーバーパネルでサブドメイン `tools.insemble.jp` を追加し、無料SSLを有効にする
 2. `npm run build`
-3. `dist/` の**中身**をサブドメインの公開フォルダへアップロード
+3. `dist/` の**中身**をサブドメインの公開フォルダへアップロード（**毎回すべて**。CSS・JS のファイル名は中身が変わるたびに変わるので、HTML だけ上げるとデザインが外れる）
    - `dist/api/ogp.php`（OGPの取得）と `dist/.htaccess` も一緒に上がります
 4. PHP のバージョンは **8.0 以上**（cURL・DOM・mbstring は Xserver 標準で有効）
 5. 公開後に確認
