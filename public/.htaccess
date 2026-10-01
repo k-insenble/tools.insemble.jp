@@ -10,7 +10,9 @@ RewriteCond %{HTTPS} off
 RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
 # 末尾スラッシュに統一（/ogp → /ogp/）
-RewriteCond %{REQUEST_FILENAME} !-f
+# フォルダが実際にあるときだけ付ける。ないもの（/sitemap.xml を上げる前など）は、そのまま 404 にする
+# （ここで 301 を返すと、ブラウザや Google が「/xxx/ へ引っ越した」と覚えてしまい、あとからファイルを置いても開けなくなる）
+RewriteCond %{REQUEST_FILENAME} -d
 RewriteCond %{REQUEST_URI} !/$
 RewriteCond %{REQUEST_URI} !^/api/
 RewriteRule ^(.*)$ /$1/ [L,R=301]
