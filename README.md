@@ -50,9 +50,12 @@ npm run preview
    - `/sitemap-index.xml` が出ている
 
 ### 画像（入っています）
-- `public/og-image.png`（1200×630。全ページ共通。ページごとに変えるときは Base の `ogImage` で指定）
+- 共有用の画像（OGP画像・1200×630）
+  - `public/og-image.png`：共通（トップ・規約）
+  - `public/og/<slug>.png`：ツールごと（`ToolPage.astro` が自動で指定する）
+  - どちらも `npm run og` で書き出す（文言は `scripts/og/og.config.mjs`、見た目は `scripts/og/render.mjs`。Google Chrome とネット接続が必要。1枚だけなら `npm run og -- seat`）
+  - `public/og/ogp.png`：OGPチェッカー用。これだけはデザインプロジェクトの「OGP画像.html」から作ったもの。文言を変えたらそちらで書き出し直す
 - `favicon.svg` ／ `favicon-32.png` ／ `favicon-48.png`（Google検索結果用）／ `apple-touch-icon.png`（180）／ `icon-192.png` ／ `icon-512.png` ／ `site.webmanifest`
-- 元データはデザインプロジェクトの「OGP画像.html」。文言を変えたら書き出し直してください。
 
 ### 公開前に用意するもの
 - `src/data/hub.js` の `CHANGELOG`（公開日など）を実際の内容に。更新情報は `SHOW_UPDATES = false` で非表示中

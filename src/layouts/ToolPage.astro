@@ -43,6 +43,7 @@ const tool = HUB.TOOLS.find((t) => t.slug === slug);
 const name = tool?.name ?? h1;
 const path = `/${slug}/`;
 const url = new URL(path, Astro.site).href;
+/* 共有用の画像は public/og/<slug>.png（文言は scripts/og/og.config.mjs、作り直すときは npm run og） */
 const live = HUB.TOOLS.filter((t) => t.status === "live");
 
 const jsonLd = [
@@ -62,7 +63,7 @@ const FOOT: { h: string; items: [string, string][] }[] = [
 const related = live.filter((t) => t.slug !== slug)
   .sort((a, b) => Number(b.cat === tool?.cat) - Number(a.cat === tool?.cat)).slice(0, 4);
 ---
-<Base title={title} description={description} path={path} ogTitle={ogTitle} jsonLd={jsonLd}>
+<Base title={title} description={description} path={path} ogTitle={ogTitle} ogImage={new URL(`/og/${slug}.png`, Astro.site).href} jsonLd={jsonLd}>
   <Header nav={NAV} />
 
   <main>
