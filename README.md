@@ -47,7 +47,7 @@ npm run preview
    - `https://tools.insemble.jp/ogp/` で自社サイトのURLをチェックできる
    - `https://tools.insemble.jp/ogp/#url=https://www.insemble.co.jp` を開くと、自動でチェックされる
    - `/pdf-extract/` でPDFを開いて「テキストを抽出」できる（開けないときは、`.mjs` と `.wasm` の種類の設定＝ `.htaccess` の `AddType` を確認）
-   - `/sitemap-index.xml` が出ている
+   - `/sitemap.xml`（中身は `/sitemap-index.xml` と同じ）が出ている。Search Console にはどちらかを登録する
 
 ### 画像（入っています）
 - 共有用の画像（OGP画像・1200×630）
