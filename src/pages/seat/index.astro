@@ -1,0 +1,115 @@
+---
+/* 席順メーカー：参加者を入れるだけで、卓ごとの座席表をつくる。動きは src/scripts/tools/seat.js */
+import ToolPage from "../../layouts/ToolPage.astro";
+import Icon from "../../components/Icon.astro";
+import Stepper from "../../components/tools/Stepper.astro";
+import NamesField from "../../components/tools/NamesField.astro";
+
+const FAQ = [
+  { q: "入れた名前はどこかに送られますか？", a: "送られません。席を決める処理は、すべてお使いのブラウザの中で行います。名前が運営者のサーバーに届くことはなく、保存もしません。" },
+  { q: "卓の数と1卓の人数、どちらを決めればいいですか？", a: "どちらでも大丈夫です。片方を変えると、もう片方が自動で合います。人数が割り切れないときは、差が1人以内になるように、なるべく均等に分けます。" },
+  { q: "「この2人は別の卓に」はできますか？", a: "できます。「条件をつける」を開き、別の卓にしたい2人を1行に1組ずつ書いてください（例：田中 佐藤）。できるかぎり守るように席を決めます。人数の都合でどうしても守れないときは、そのことをお知らせします。" },
+  { q: "部長や幹事の席を決めてから、残りをランダムにできますか？", a: "いまは全員をまとめて決める形です。決まった結果を「もう一回シャッフル」で何度でも引き直せるので、気に入る並びが出るまで押してみてください。" },
+  { q: "座席表を参加者に共有したいです", a: "「画像で保存」で座席表を画像（PNG）にできます。LINEやチャットにそのまま貼れます。文字で送りたいときは「結果をコピー」を使ってください。" },
+  { q: "ランダムは本当にかたよりませんか？", a: "ブラウザの暗号用の乱数（crypto.getRandomValues）を使い、どの並びも同じ確からしさで出るように混ぜています。" },
+];
+---
+<ToolPage
+  slug="seat"
+  title="席順メーカー｜飲み会・イベントの席決めを1クリックで｜insemble tools"
+  description="参加者の名前を入れるだけで、卓ごとの座席表ができる無料の席決めツール。卓の数・1卓の人数を決めてランダムに配置。別の卓にしたい組み合わせも指定でき、座席表は画像保存・コピーできます。"
+  ogTitle="席順メーカー｜幹事の席決めを、1クリックに"
+  h1="席順メーカー｜飲み会・イベントの席決めツール"
+  lead={["幹事の席決めを、", "1クリック", "に。"]}
+  sub="名前を入れて押すだけ。卓ごとの座席表を、画像やテキストで配れます。"
+  meta={[["check", "端末内で処理"], ["check", "名前は送信しません"]]}
+  steps={[
+    { t: "名前を入れる", d: "参加者を1行に1人。名簿やチャットからコピーして貼り付けても大丈夫です。" },
+    { t: "卓を決めて押す", d: "卓の数か1卓の人数を決めて「席を決める」。気に入るまでシャッフルできます。" },
+    { t: "座席表を配る", d: "画像で保存してLINEやチャットへ。文字でコピーすることもできます。" },
+  ]}
+  faq={FAQ}
+  about={[
+    ["しくみ", "入れた名前を、指定した卓の数に、なるべく均等になるようランダムに割り振ります。条件があるときは、守れる並びを探します。"],
+    ["保存", "入れた名前と結果は、どこにも送らず、保存もしません。ページを閉じると消えます。"],
+    ["人数", "500人まで。1卓の人数は50人までです。"],
+  ]}
+  corp="たとえば「部署や役職がばらけるように、毎月の席替えを自動で決める」ような、社内向けの専用ツールもつくれます。"
+  updated="2026-09-30"
+>
+  <div class="tp-panel">
+    <div class="tp-split">
+      <form class="tp-in" id="seat-form" novalidate>
+        <NamesField id="seat-names" />
+        <div class="sets">
+          <div class="set">
+            <span class="set-l">卓の数</span>
+            <Stepper id="seat-groups" label="卓の数" value={1} max={500} />
+          </div>
+          <div class="set">
+            <span class="set-l">1卓の人数<small>最大の人数</small></span>
+            <Stepper id="seat-per" label="1卓の人数" value={6} max={50} />
+          </div>
+          <p class="set-sum" id="seat-sum" aria-live="polite"></p>
+          <div class="set">
+            <span class="set-l">卓の形</span>
+            <div class="pick" id="seat-shape" role="group" aria-label="卓の形">
+              <button type="button" data-v="long" aria-pressed="true">長机</button>
+              <button type="button" data-v="round" aria-pressed="false">丸テーブル</button>
+            </div>
+          </div>
+          <label class="chk"><input type="checkbox" id="seat-random" checked />席をランダムにする<span class="fld-hint">（外すと入れた順）</span></label>
+        </div>
+        <details class="more">
+          <summary><Icon name="chevron" size={16} />条件をつける（任意）</summary>
+          <div class="more-body">
+            <label class="fld">
+              <span class="fld-l">別の卓にしたい組み合わせ<span class="fld-hint">1行に1組</span></span>
+              <textarea class="ta sm" id="seat-apart" rows="3" placeholder="田中 佐藤&#10;鈴木、高橋" spellcheck="false"></textarea>
+            </label>
+          </div>
+        </details>
+        <button type="submit" class="btn btn-primary btn-lg btn-block"><Icon name="shuffle" size={18} />席を決める</button>
+        <div class="msgs" id="seat-msgs"></div>
+      </form>
+
+      <div class="tp-out" id="seat-out">
+        <div class="empty">
+          <div class="re-ic"><Icon name="seat" size={22} tool /></div>
+          <p class="re-t">ここに座席表が出ます</p>
+          <p class="re-d">名前を入れて「席を決める」を押してください。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</ToolPage>
+
+<script>
+  import "../../scripts/tools/seat.js";
+</script>
+
+<style is:global>
+  .set-sum{font-size:14px;font-weight:700;color:var(--primary-ink);padding:10px 0;border-bottom:1px solid var(--line)}
+  .st-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:var(--g-md) var(--g-sm)}
+  .st-table{min-width:0}
+  .st-h{display:flex;align-items:baseline;gap:8px;padding-bottom:8px;margin-bottom:12px;border-bottom:3px solid var(--hue)}
+  .st-h b{font-family:var(--font-display);font-weight:800;font-size:18px;color:var(--ink)}
+  .st-h span{font-size:13px;color:var(--muted)}
+  /* 長机：左右に向かい合う */
+  .st-long{display:grid;grid-template-columns:minmax(0,1fr) 30px minmax(0,1fr);gap:8px 10px;align-items:center}
+  .st-board{grid-column:2;grid-row:1/-1;align-self:stretch;border-radius:8px;background:var(--paper);border:1.5px solid var(--line-2);min-height:40px}
+  .st-seat{display:flex;align-items:center;gap:6px;min-height:44px;padding:8px 10px;border:1.5px solid var(--line-2);border-radius:12px;background:#fff;font-weight:700;font-size:15px;line-height:1.35;color:var(--ink);overflow-wrap:anywhere;min-width:0}
+  .st-seat::before{content:"";width:8px;height:8px;border-radius:99px;background:var(--hue);flex-shrink:0}
+  .st-seat.l{grid-column:1}
+  .st-seat.r{grid-column:3}
+  .st-seat.empty{border-style:dashed;color:var(--muted);font-weight:500}
+  .st-seat.empty::before{background:var(--line-2)}
+  /* 丸テーブル：円のまわりに並べる */
+  .st-round{position:relative;width:100%;max-width:300px;margin:0 auto;aspect-ratio:1/1}
+  .st-round::before{content:"";position:absolute;inset:31%;border-radius:50%;background:var(--paper);border:1.5px solid var(--line-2)}
+  /* 位置（left / top）は seat.js が角度から計算して入れる。
+     中央合わせは translate で（transform だと、登場アニメーション .pop-in の transform:none に消される） */
+  .st-round .st-seat{position:absolute;width:min(90px,29%);min-height:0;padding:6px 6px;font-size:13.5px;justify-content:center;text-align:center;translate:-50% -50%}
+  .st-round .st-seat::before{display:none}
+  .st-round .st-seat{border-top:3px solid var(--hue)}
+</style>

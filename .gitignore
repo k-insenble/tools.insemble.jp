@@ -7,3 +7,6 @@ dist/
 # 環境ごとの設定は入れない（見本は .env.example）
 .env*
 !.env.example
+
+# pdf.js の付属データ（npm run dev / build のたびに scripts/copy-pdfjs.mjs がコピーする）
+public/pdfjs/

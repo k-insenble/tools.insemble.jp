@@ -1,10 +1,10 @@
 /* ===========================================================
    ツールハブ（React なし）
-   URLで検索 / お気に入り・最近使った（このブラウザの中だけ）/ 一覧の絞り込み / 人気・新着
+   ツールを探す（入力で絞り込み）/ お気に入り・最近使った（このブラウザの中だけ）
    =========================================================== */
-import "./site.js";
+import { goTo } from "./site.js";
 import "./faq.js";
-import { svg, toolSvg } from "../lib/icons.js";
+import { toolSvg } from "../lib/icons.js";
 import H from "../data/hub.js";
 
 const $ = (s, r = document) => r.querySelector(s);
@@ -23,11 +23,6 @@ const toolUrl = (t, url) => "/" + t.slug + "/" + (url ? "#url=" + encodeURICompo
 function remember(slug) {
   recent = [slug, ...recent.filter((x) => x !== slug)].slice(0, 8);
   save("hub.recent", recent);
-}
-function open(t, url) {
-  if (!t || t.status !== "live") return;
-  remember(t.slug);
-  location.href = toolUrl(t, url);
 }
 // ツールへのリンクを押したら「最近使った」に入れる（遷移はリンクのまま）
 document.addEventListener("click", (e) => {
@@ -61,85 +56,72 @@ $$("[data-fav]").forEach((b) => b.addEventListener("click", () => {
   drawMy();
 }));
 
-/* ---------- ヒーローの検索（URLを入れたら対応するツールへ） ---------- */
+/* ---------- ヒーローの検索（ツールを探す専用。入れたそばから一覧を絞り込む） ---------- */
 const form = $("#hub-search");
 const input = $("input", form);
-const err = $(".hub-err");
-const note = $("[data-meta-note]");
-const setErr = (msg) => { err.textContent = msg; err.hidden = !msg; note.hidden = !!msg; input.setAttribute("aria-invalid", !!msg); };
-input.addEventListener("input", () => setErr(""));
+const clearBtn = $("#hub-clear");
+const urlHint = $("#hub-url");
+const urlLink = $("#hub-url-link");
+const looksUrl = (u) => /^https?:\/\//i.test(u) || /^[\w-]+(\.[\w-]+)+(\/|$)/.test(u);
+const urlTool = H.TOOLS.find((t) => t.url && t.status === "live");
+
+function onInput() {
+  const v = input.value.trim();
+  clearBtn.hidden = !input.value;
+  const isUrl = looksUrl(v);
+  // URLを貼った人には、URLで使うツールへのリンクを出すだけ（押すかどうかは本人が決める）
+  if (urlHint) {
+    urlHint.hidden = !isUrl || !urlTool;
+    if (isUrl && urlTool) urlLink.href = toolUrl(urlTool, v);
+  }
+  filter(isUrl ? "" : input.value);
+}
+input.addEventListener("input", onInput);
+clearBtn.addEventListener("click", () => { input.value = ""; onInput(); input.focus(); });
+
+// Enter：探した結果の場所へ送るだけ（スマホではキーボードを閉じる）
 form.addEventListener("submit", (e) => {
   e.preventDefault();
-  const u = input.value.trim();
-  if (!(/^https?:\/\//i.test(u) || /^[\w-]+(\.[\w-]+)+(\/|$)/.test(u))) return setErr("URLの形で入力してください（例：https://example.com）");
-  setErr("");
-  const url = /^https?:\/\//i.test(u) ? u : "https://" + u;
-  const live = H.TOOLS.filter((t) => t.url && t.status === "live");
-  if (live.length === 1) return open(live[0], url);
-  drawSuggest(url);
+  const v = input.value.trim();
+  if (!v || looksUrl(v)) return;
+  const { live, soon } = filter(v);
+  input.blur();
+  if (live) goTo("#tools");
+  else if (soon) goTo("#catalog");
 });
 
-/* URLで使えるツールが2つ以上になったら、どれで開くかを選ばせる */
-function drawSuggest(url) {
-  const slot = $("#suggest-slot");
-  const rows = H.TOOLS.filter((t) => t.url).map((t) => t.status === "soon"
-    ? `<a class="s-row soon" aria-disabled="true"><span class="s-ic">${toolSvg(t.icon, 18)}</span><span class="s-name">${esc(t.name)}</span><span class="lbl">準備中</span></a>`
-    : `<a class="s-row" href="${esc(toolUrl(t, url))}" data-open="${t.slug}"><span class="s-ic">${toolSvg(t.icon, 18)}</span><span class="s-name">${esc(t.name)}</span><span class="s-go">このURLで開く</span>${svg("arrow", 16)}</a>`).join("");
-  slot.innerHTML = `<div class="suggest">
-    <div class="suggest-head">
-      <span class="suggest-k">${svg("bolt", 14)}このURLで使えるツール</span>
-      <code class="suggest-url">${esc(url)}</code>
-      <button type="button" class="hub-clear" aria-label="閉じる" data-close>${svg("x", 16)}</button>
-    </div>
-    <div class="suggest-rows">${rows}</div>
-  </div>`;
-  $("[data-close]", slot).addEventListener("click", () => { slot.innerHTML = ""; });
-}
+/* ---------- 一覧の絞り込み（いま使えるツール＋これから公開するツール） ---------- */
+const liveRows = $$("#live-list [data-search]");
+const soonBox = $("#soon-box");
+const soonSecs = $$("[data-cat-sec]", soonBox);
+let userOpen = soonBox.open; // 絞り込む前に、自分で開いていたか
+soonBox.addEventListener("toggle", () => { if (!input.value.trim()) userOpen = soonBox.open; });
 
-/* ---------- 人気ランキング／新着（公開中が3つ以上のときだけタブが出る） ---------- */
-$$("[data-feat]").forEach((b) => b.addEventListener("click", () => {
-  $$("[data-feat]").forEach((x) => { const on = x === b; x.classList.toggle("on", on); x.setAttribute("aria-selected", on); });
-  $$("[data-feat-list]").forEach((l) => { l.hidden = l.dataset.featList !== b.dataset.feat; });
-}));
-
-/* ---------- カタログの絞り込み ---------- */
-const q = $("#cat-q");
-const clear = $("#cat-clear");
-const secs = $$("[data-cat-sec]");
-let cat = "all";
-function filter() {
-  const term = q.value.trim().toLowerCase();
-  clear.hidden = !q.value;
-  let first = true, hits = 0;
-  secs.forEach((sec) => {
+function filter(raw) {
+  // 全角・半角をそろえ、空白で区切ったことばがすべて含まれるものを出す（例：「ＰＤＦ 画像」）
+  const terms = String(raw || "").trim().normalize("NFKC").toLowerCase().split(/\s+/).filter(Boolean);
+  const hit = (r) => terms.every((t) => r.dataset.search.includes(t));
+  let live = 0, soon = 0;
+  liveRows.forEach((r) => { const ok = hit(r); r.hidden = !ok; if (ok) live++; });
+  soonSecs.forEach((sec) => {
     let n = 0;
-    $$(".t-row", sec).forEach((r) => {
-      const ok = (cat === "all" || sec.dataset.catSec === cat) && (!term || r.dataset.search.includes(term));
-      r.hidden = !ok;
-      if (ok) n++;
-    });
+    $$(".t-row", sec).forEach((r) => { const ok = hit(r); r.hidden = !ok; if (ok) n++; });
     sec.hidden = !n;
     $(".cat-n", sec).textContent = n;
-    sec.style.marginTop = n && first ? "0" : ""; // 見えている先頭のカテゴリは上の余白なし
-    if (n) first = false;
-    hits += n;
+    soon += n;
   });
-  $("#no-hit").hidden = hits > 0;
-  $("#no-hit-q").textContent = q.value;
+  $("#live-n").textContent = live;
+  $("#soon-n").textContent = soon;
+  // 準備中だけに当たったときは、たたんでいる一覧を開いて見せる。ことばを消したら元に戻す
+  soonBox.open = terms.length ? soon > 0 && live === 0 ? true : soonBox.open : userOpen;
+  const box = $("#no-hit");
+  box.hidden = !terms.length || live > 0;
+  $("#no-hit-q").textContent = raw;
+  $(".no-hit-t", box).lastChild.textContent = soon ? "」は、いま準備中です" : "」に合うツールが見つかりませんでした";
+  $(".no-hit-d", box).textContent = soon ? "下の「これから公開するツール」にあります。公開まで、もうしばらくお待ちください。" : "ツールは順次ふやしています。別のことばでも探してみてください。";
+  return { live, soon };
 }
-q.addEventListener("input", filter);
-clear.addEventListener("click", () => { q.value = ""; filter(); q.focus(); });
-$$("button[data-cat]").forEach((b) => b.addEventListener("click", () => {
-  cat = b.dataset.cat;
-  $$("button[data-cat]").forEach((x) => x.classList.toggle("on", x === b));
-  filter();
-}));
-$("#no-hit-clear").addEventListener("click", () => {
-  q.value = "";
-  cat = "all";
-  $$("button[data-cat]").forEach((x) => x.classList.toggle("on", x.dataset.cat === "all"));
-  filter();
-});
+$("#no-hit-clear").addEventListener("click", () => { input.value = ""; onInput(); input.focus(); });
 
 /* ---------- 起動 ---------- */
 drawFavs();

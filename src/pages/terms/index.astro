@@ -1,11 +1,12 @@
 ---
 /* 利用規約・プライバシーポリシー
    実際の動きと食い違わないように書く。ツールや計測タグを変えたら、ここも見直す
-   （OGPの取得：public/api/ogp.php／計測タグ：src/layouts/Base.astro） */
+   （OGPの取得：public/api/ogp.php／計測タグ：src/layouts/Base.astro／端末内のツール：src/scripts/tools/） */
 import Base from "../../layouts/Base.astro";
 import Header from "../../components/Header.astro";
 import Footer from "../../components/Footer.astro";
 import { ORG } from "../../data/org.js";
+import HUB from "../../data/hub.js";
 import "../../styles/hub.css";
 
 const UPDATED = "2026-09-30";
@@ -17,12 +18,12 @@ const jsonLd = [
 
 const NAV: [string, string][] = [["#terms", "利用規約"], ["#privacy", "プライバシーポリシー"], ["/#tools", "ツール一覧"]];
 const FOOT: { h: string; items: [string, string][] }[] = [
-  { h: "ツール", items: [["OGPチェッカー", "/ogp/"], ["ツール一覧", "/#tools"]] },
+  { h: "ツール", items: [...HUB.TOOLS.filter((t) => t.status === "live").map((t) => [t.name, "/" + t.slug + "/"] as [string, string]), ["ツール一覧", "/#tools"]] },
 ];
 ---
 <Base
   title="利用規約・プライバシーポリシー｜insemble tools"
-  description="insemble tools を使うときの約束と、入力した内容・アクセス解析の情報の扱いについて。入力したURLと結果は保存しません。"
+  description="insemble tools を使うときの約束と、入力した内容・ファイル・アクセス解析の情報の扱いについて。入力したURLやファイル、結果は保存しません。"
   path="/terms/"
   jsonLd={jsonLd}
 >
@@ -43,7 +44,7 @@ const FOOT: { h: string; items: [string, string][] }[] = [
       <h2 id="terms-h">利用規約</h2>
 
       <h3>1. このサイトについて</h3>
-      <p>このサイトは、株式会社インセンブル（以下「運営者」）が運営する、Web制作に役立つ無料のツール集です。会員登録は要りません。個人でもお仕事でも、無料で使えます。</p>
+      <p>このサイトは、株式会社インセンブル（以下「運営者」）が運営する、Web制作や日々の仕事に役立つ無料のツール集です。会員登録は要りません。個人でもお仕事でも、無料で使えます。</p>
 
       <h3>2. してはいけないこと</h3>
       <ul>
@@ -55,7 +56,7 @@ const FOOT: { h: string; items: [string, string][] }[] = [
       <p>短時間にたくさんのチェックがあったときは、しばらく使えなくなることがあります（1分あたりの回数に上限を設けています）。</p>
 
       <h3>3. 結果について</h3>
-      <p>ツールの結果は、正確になるよう努めていますが、保証はできません。SNSやチャットツールでの実際の見え方は、各サービスの仕様や設定によって変わることがあります。公開前の最終確認は、各サービスの公式ツールなどでお願いします。</p>
+      <p>ツールの結果は、正確になるよう努めていますが、保証はできません。SNSやチャットツールでの実際の見え方は、各サービスの仕様や設定によって変わることがあります。公開前の最終確認は、各サービスの公式ツールなどでお願いします。PDFから取り出した文字や画像、作ったExcelファイルなども、使う前に内容をご確認ください。</p>
 
       <h3>4. 責任の範囲</h3>
       <p>このサイトを使ったこと、または使えなかったことで生じた損害について、運営者は責任を負いません。ただし、運営者に故意または重大な過失がある場合は除きます。</p>
@@ -79,8 +80,10 @@ const FOOT: { h: string; items: [string, string][] }[] = [
         <dd>ページの情報を読み取るために、運営者のサーバーを経由します。入れたURLと結果は保存しません。サーバーのアクセスの記録（アクセスログ）にも残らない形で送っています。</dd>
         <dt>ID・パスワードの入ったURL</dt>
         <dd>受け付けません。送る前に止めます。</dd>
-        <dt>「最近チェックしたURL」「お気に入り」など</dt>
-        <dd>お使いのブラウザの中にだけ保存します。運営者には届きません。ブラウザの「閲覧履歴データの削除」などで消せます。</dd>
+        <dt>端末内で処理するツールに入れたもの（PDFばらし屋・席順メーカー・イベント用ルーレット・グループ分けメーカー・スケジュール→Excelメーカー）</dt>
+        <dd>選んだPDF、入れた名前や予定、できた結果は、お使いのブラウザの中だけで処理します。運営者のサーバーにも、外部のサービスにも送りません。PDFを読み取るためのプログラム（pdf.js）も、このサイトから配信しています。</dd>
+        <dt>「最近チェックしたURL」「お気に入り」、スケジュール→Excelメーカーの入力途中の内容</dt>
+        <dd>お使いのブラウザの中にだけ保存します。運営者には届きません。スケジュール→Excelメーカーの内容は「リセット」で、そのほかはブラウザの「閲覧履歴データの削除」などで消せます。共用のパソコンでは、使い終わったら消してください。</dd>
         <dt>回数の上限のための情報</dt>
         <dd>短時間の大量利用を防ぐため、IPアドレス（インターネット上の住所のような番号）から作った元に戻せない値と、使った回数を、サーバーに約2分だけ置きます。その後は自動で消します。</dd>
         <dt>プレビュー画像</dt>
@@ -93,7 +96,7 @@ const FOOT: { h: string; items: [string, string][] }[] = [
         <dt>Google アナリティクス（Google LLC）</dt>
         <dd>見られたページ、使った端末やブラウザの種類、おおまかな地域などを集計します。チェックしたURLは送りません。止めたいときは <a href="https://tools.google.com/dlpage/gaoptout?hl=ja" target="_blank" rel="noopener">Google アナリティクス オプトアウト アドオン</a> を使えます。データの扱いは <a href="https://policies.google.com/technologies/partner-sites?hl=ja" target="_blank" rel="noopener">Google のサービスを使用するサイトやアプリから収集した情報の Google による使用</a> をご覧ください。</dd>
         <dt>Microsoft Clarity（Microsoft Corporation）</dt>
-        <dd>クリックやスクロールなどの操作と、その画面の様子を記録し、使いにくいところを見つけるのに使います。Microsoft Advertising とも連携しています。入力欄とチェック結果は伏せ字にして、中身は記録しません。データの扱いは <a href="https://privacy.microsoft.com/ja-jp/privacystatement" target="_blank" rel="noopener">Microsoft プライバシーに関する声明</a> をご覧ください。</dd>
+        <dd>クリックやスクロールなどの操作と、その画面の様子を記録し、使いにくいところを見つけるのに使います。Microsoft Advertising とも連携しています。入力欄と、ツールの結果（チェック結果、入れた名前や予定、PDFの中身など）は伏せ字にして、中身は記録しません。データの扱いは <a href="https://privacy.microsoft.com/ja-jp/privacystatement" target="_blank" rel="noopener">Microsoft プライバシーに関する声明</a> をご覧ください。</dd>
       </dl>
       <p>Cookie は、ブラウザの設定で受け取らないようにできます。そうしても、ツールはそのまま使えます。</p>
 

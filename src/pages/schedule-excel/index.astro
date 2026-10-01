@@ -1,0 +1,154 @@
+---
+/* スケジュール→Excelメーカー：Webで予定を入れて、そのまま配れる Excel（.xlsx）にする
+   動きは src/scripts/tools/schedule.js。表の形（テンプレート）は src/lib/schedule-templates.js で差し替えられる */
+import ToolPage from "../../layouts/ToolPage.astro";
+import Icon from "../../components/Icon.astro";
+import { TEMPLATES } from "../../lib/schedule-templates.js";
+
+const FAQ = [
+  { q: "入れた予定はどこかに送られますか？", a: "送られません。Excelファイルは、お使いのブラウザの中で作ります。入れた内容が運営者のサーバーに届くことはありません。" },
+  { q: "途中でページを閉じても大丈夫ですか？", a: "入力中の内容は、お使いのブラウザの中にだけ一時保存しているので、同じ端末・同じブラウザで開き直せば続きから使えます。「リセット」を押すと消えます。共用のパソコンでは、使い終わったらリセットしてください。" },
+  { q: "「一覧表」「進行表」「担当別」のちがいは？", a: "「一覧表」は入れた順に1行ずつ並べた、いちばん基本の形です。「進行表」は日付ごとに区切って時間順に並べ、所要時間（分）も出すので、イベント当日の進行に向いています。「担当別」は担当者ごとにまとめるので、それぞれに配るときに便利です。" },
+  { q: "できたExcelはどのソフトで開けますか？", a: "Microsoft Excel（Windows・Mac）のほか、Googleスプレッドシート、Numbers でも開けます。日付と時刻はExcelの日付・時刻として入っているので、あとから並べ替えや計算もできます。" },
+  { q: "Excelやメモ帳にある予定をまとめて入れられますか？", a: "「まとめて貼り付ける」を開いて、1行に1件ずつ貼り付けてください。「日付・開始・終了・内容・担当・備考」の順に、タブ（Excelからのコピー）かカンマで区切ってあれば、それぞれの欄に振り分けます。" },
+  { q: "会社で決まっているExcelの書式で出したいです", a: "このツールは表の形を差し替えられる作りになっています。御社の書式に合わせた専用版の制作も承っています。ページ下の「Webツール制作のご相談」からお問い合わせください。" },
+];
+---
+<ToolPage
+  slug="schedule-excel"
+  title="スケジュール→Excelメーカー｜予定を入れるだけでExcelの予定表に｜insemble tools"
+  description="日付・時間・内容・担当を入れるだけで、そのまま配れるExcel（.xlsx）の予定表ができる無料ツール。一覧表・イベントの進行表・担当別の3つの形から選べて、CSVでも保存できます。入力はブラウザ内で処理し、送信しません。"
+  ogTitle="スケジュール→Excelメーカー｜入れた予定が、そのままExcelに"
+  h1="スケジュール→Excelメーカー｜予定表をExcelで作る無料ツール"
+  lead={["入れた予定が、そのまま", "Excel", "に。"]}
+  sub="日付・時間・内容を入れるだけ。罫線や見出し、印刷の設定まで整った予定表を書き出します。"
+  meta={[["check", "端末内で処理"], ["check", "入力は送信しません"]]}
+  steps={[
+    { t: "予定を追加", d: "「予定を追加」で1行ずつ。前の行の日付と終了時刻を引き継ぐので、続けて入れるのがかんたんです。" },
+    { t: "形を選ぶ", d: "一覧表・進行表・担当別から選ぶと、下のプレビューがその形に変わります。" },
+    { t: "Excelで保存", d: "「Excelで保存」で .xlsx をダウンロード。印刷用の設定も入っています。" },
+  ]}
+  faq={FAQ}
+  about={[
+    ["しくみ", "入れた予定から、Excelのファイル（.xlsx）をブラウザの中で組み立てます。外部のサービスは使いません。"],
+    ["保存", "入力中の内容は、お使いのブラウザの中にだけ一時保存します（運営者には届きません）。「リセット」で消えます。"],
+    ["書き出せる形", "Excel（.xlsx）・CSV（UTF-8。Excelで開いても文字化けしません）"],
+  ]}
+  corp="たとえば「御社で決まっているExcelの書式を、Webのフォームから自動でつくる」ような、業務に合わせた専用ツールもつくれます。"
+  appCategory="BusinessApplication"
+  updated="2026-09-30"
+>
+  <div class="tp-panel sch" id="sch">
+    <div class="sch-top">
+      <label class="fld sch-title">
+        <span class="fld-l">表のタイトル</span>
+        <input class="inp" id="sch-title" type="text" maxlength="60" placeholder="例：10月 社内イベント 進行表" autocomplete="off" />
+      </label>
+      <div class="fld">
+        <span class="fld-l">表の形</span>
+        <div class="pick" id="sch-tpl" role="group" aria-label="表の形">
+          {TEMPLATES.map((t, i) => <button type="button" data-v={t.id} aria-pressed={i === 0 ? "true" : "false"}>{t.label}</button>)}
+        </div>
+        <p class="fld-hint" id="sch-tpl-desc">{TEMPLATES[0].desc}</p>
+      </div>
+    </div>
+
+    <div class="sch-head" aria-hidden="true">
+      <span></span><span>日付</span><span>開始</span><span>終了</span><span>内容</span><span>担当</span><span>備考</span><span></span>
+    </div>
+    <ol class="sch-rows" id="sch-rows"></ol>
+
+    <div class="sch-empty" id="sch-empty">
+      <p class="re-t">まだ予定がありません</p>
+      <p class="re-d">「予定を追加」で1行ずつ入れていきます。</p>
+    </div>
+
+    <div class="sch-bar">
+      <button type="button" class="btn btn-primary btn-lg" id="sch-add"><Icon name="plus" size={18} />予定を追加</button>
+      <button type="button" class="btn btn-ghost" id="sch-sort" hidden><Icon name="sort" size={15} />日付・時間順に並べる</button>
+      <details class="more sch-paste">
+        <summary><Icon name="chevron" size={16} />まとめて貼り付ける</summary>
+        <div class="more-body">
+          <label class="fld">
+            <span class="fld-l">1行に1件<span class="fld-hint">日付・開始・終了・内容・担当・備考の順（タブかカンマ区切り）</span></span>
+            <textarea class="ta sm" id="sch-paste" rows="4" placeholder="2026/10/1	10:00	11:00	開場・受付	田中&#10;2026/10/1	11:00	12:00	オープニング	佐藤" spellcheck="false"></textarea>
+          </label>
+          <div class="acts"><button type="button" class="btn btn-ghost" id="sch-paste-go"><Icon name="plus" size={15} />行に追加する</button></div>
+        </div>
+      </details>
+    </div>
+
+    <div class="msgs" id="sch-msgs"></div>
+
+    <section class="sch-prev-wrap" id="sch-prev-wrap" hidden aria-labelledby="sch-prev-h">
+      <div class="out-head">
+        <div>
+          <h2 class="out-t" id="sch-prev-h">プレビュー</h2>
+          <p class="out-d">Excelでは、この形で書き出します</p>
+        </div>
+        <div class="acts">
+          <button type="button" class="btn btn-primary" id="sch-xlsx"><Icon name="download" size={16} />Excelで保存</button>
+          <button type="button" class="btn btn-ghost" id="sch-csv"><Icon name="download" size={15} />CSVで保存</button>
+          <button type="button" class="btn btn-ghost" id="sch-reset"><Icon name="reset" size={15} />リセット</button>
+        </div>
+      </div>
+      <div class="sch-prev" id="sch-prev"></div>
+    </section>
+    <p class="sch-saved fld-hint" id="sch-saved" hidden><Icon name="check" size={13} />入力中の内容は、この端末のブラウザにだけ一時保存しています（リセットで消えます）</p>
+  </div>
+</ToolPage>
+
+<script>
+  import "../../scripts/tools/schedule.js";
+</script>
+
+<style is:global>
+  .sch{padding:var(--g-md);display:flex;flex-direction:column;gap:var(--g-sm)}
+  @media(max-width:560px){.sch{padding:var(--g-sm)}}
+  .sch-top{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--g-sm) var(--g-md);align-items:start;padding-bottom:var(--g-sm);border-bottom:1px solid var(--line)}
+  @media(max-width:760px){.sch-top{grid-template-columns:minmax(0,1fr)}}
+  /* 行：PCは表のように横1列、スマホは3段 */
+  .sch-head,.sch-row{display:grid;grid-template-columns:34px 150px 104px 104px minmax(0,1.6fr) minmax(0,.8fr) minmax(0,1.2fr) auto;gap:8px;align-items:center}
+  .sch-head{font-size:13px;font-weight:700;color:var(--muted);padding:0 0 2px}
+  .sch-head[hidden]{display:none}
+  .sch-rows{list-style:none;counter-reset:sch;border-top:1px solid var(--line)}
+  .sch-rows:empty{display:none}
+  .sch-row{counter-increment:sch;padding:8px 0;border-bottom:1px solid var(--line)}
+  .sch-row.moved{animation:tpIn .3s ease both}
+  .sch-n{font-family:var(--font-display);font-weight:800;font-size:13px;color:var(--primary-ink);background:var(--primary-soft);border-radius:99px;height:28px;display:grid;place-items:center}
+  .sch-n::before{content:counter(sch)}
+  .sch-row .inp{padding:8px 10px;min-height:44px}
+  .sch-row .inp.warn{border-color:var(--warn)}
+  .sch-ctl{display:flex;gap:2px}
+  .sch-ctl .icon-btn{width:36px;height:40px}
+  .sch-lbl{display:none}
+  @media(max-width:900px){
+    .sch-head{display:none}
+    .sch-row{grid-template-columns:repeat(6,minmax(0,1fr));gap:8px 8px;padding:12px 0}
+    .sch-n{grid-column:1/2;justify-self:start;min-width:28px;padding:0 8px}
+    .sch-ctl{grid-column:2/7;justify-self:end}
+    .sch-f{display:flex;flex-direction:column;gap:3px;min-width:0}
+    .sch-lbl{display:block;font-size:12.5px;font-weight:700;color:var(--muted)}
+    .sch-f.date{grid-column:1/3}.sch-f.start{grid-column:3/5}.sch-f.end{grid-column:5/7}
+    .sch-f.title{grid-column:1/-1}.sch-f.who{grid-column:1/3}.sch-f.note{grid-column:3/7}
+  }
+  @media(max-width:420px){.sch-f.date{grid-column:1/-1}.sch-f.start{grid-column:1/4}.sch-f.end{grid-column:4/7}}
+  .sch-empty{text-align:center;padding:var(--g-md) 0 0}
+  .sch-empty[hidden]{display:none}
+  .sch-bar{display:flex;flex-wrap:wrap;align-items:flex-start;gap:10px 12px}
+  .sch-paste{flex-basis:100%;border-top:none;padding-top:0}
+  .sch-prev-wrap{border-top:3px solid var(--ink);padding-top:var(--g-sm);margin-top:var(--g-xs)}
+  .sch-prev-wrap[hidden]{display:none}
+  .sch-prev{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r-sm);background:#fff}
+  .sch-prev table{border-collapse:collapse;min-width:100%;font-size:14px}
+  .sch-prev td,.sch-prev th{border:1px solid #d6dbdf;padding:6px 10px;vertical-align:middle;white-space:nowrap;color:var(--ink)}
+  .sch-prev td.wrap{white-space:pre-wrap;min-width:12em;overflow-wrap:anywhere}
+  .sch-prev td.c{text-align:center}
+  .sch-prev .title td{border:none;font-weight:800;font-size:17px;padding-top:12px}
+  .sch-prev .note td{border:none;font-size:12.5px;color:var(--muted);padding-top:0}
+  .sch-prev th{background:#eef1f3;font-weight:700;text-align:center}
+  .sch-prev .band td{background:#e4f1f2;font-weight:700}
+  .sch-saved{display:flex;align-items:center;gap:5px}
+  .sch-saved[hidden]{display:none}
+  .sch-saved svg{color:var(--primary)}
+</style>

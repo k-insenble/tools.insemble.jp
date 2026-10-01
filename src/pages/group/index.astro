@@ -1,0 +1,114 @@
+---
+/* グループ分けメーカー：人数を決めて押すだけで、均等なグループに分ける。動きは src/scripts/tools/group.js */
+import ToolPage from "../../layouts/ToolPage.astro";
+import Icon from "../../components/Icon.astro";
+import Stepper from "../../components/tools/Stepper.astro";
+import NamesField from "../../components/tools/NamesField.astro";
+
+const FAQ = [
+  { q: "入れた名前はどこかに送られますか？", a: "送られません。グループ分けは、すべてお使いのブラウザの中で行います。名前が運営者のサーバーに届くことはなく、保存もしません。" },
+  { q: "人数が割り切れないときは？", a: "「人数をなるべく均等にする」がオンなら、グループの人数の差が1人以内になるように分けます。オフにすると、1グループの人数ずつ区切り、余った人を最後のグループにまとめます。" },
+  { q: "部署がばらけるように分けられますか？", a: "できます。名前のあとに「,」かタブで部署を書くと（例：田中,営業）、「部署などをばらけさせる」が選べるようになります。Excelの2列をそのまま貼り付けても読み取れます。" },
+  { q: "「この2人は別のグループに」はできますか？", a: "できます。「条件をつける」を開き、別にしたい2人、または一緒にしたい2人を、1行に1組ずつ書いてください（例：田中 佐藤）。人数の都合でどうしても守れないときは、そのことをお知らせします。" },
+  { q: "結果をExcelで使いたいです", a: "「CSVで保存」を押すと、グループと名前の一覧をCSVファイルで保存できます。Excelでそのまま開けます。" },
+  { q: "リーダーが決まっていて、残りだけランダムにしたいです", a: "リーダーにする人の名前の前に「★」を付けてください（例：★田中）。★の人を1グループに1人ずつ先に分けてから、残りの人をランダムに入れます。グループディスカッションの面接官や、研修のファシリテーターを各グループに1人ずつ入れたいときに使えます。★の人がグループの数より多いときは、なるべく均等に分けます。" },
+  { q: "リーダーはどうやって決まりますか？", a: "★を付けた人がリーダーになります。★を付けていないときや、★の人がいないグループは、「リーダーを決める」をオンにすると、そのグループの中からランダムに1人を選んで印を付けます。" },
+];
+---
+<ToolPage
+  slug="group"
+  title="グループ分けメーカー｜チーム分け・班分けを均等にランダムで｜insemble tools"
+  description="名前を入れて人数を決めるだけで、均等なグループに分けられる無料のチーム分けツール。研修・授業・グループディスカッションに。リーダーを1グループに1人ずつ固定する、部署をばらけさせる、特定の人を別のグループにする指定も。結果はコピー・画像・CSVで保存できます。"
+  ogTitle="グループ分けメーカー｜誰と誰を組ませるか、もう悩まない"
+  h1="グループ分けメーカー｜チーム分け・班分けツール"
+  lead={["誰と誰を組ませるか、", "もう悩まない", "。"]}
+  sub="名前を入れて、グループの数を決めて押すだけ。部署ばらしや「別にしたい2人」も指定できます。"
+  meta={[["check", "端末内で処理"], ["check", "名前は送信しません"]]}
+  steps={[
+    { t: "名前を入れる", d: "参加者を1行に1人。リーダーは名前の前に「★」、部署は名前のあとに「,部署」を付けると、それぞれ散らして分けます。" },
+    { t: "数を決めて押す", d: "グループの数か1グループの人数を決めて「グループに分ける」。何度でも分け直せます。" },
+    { t: "結果を配る", d: "テキストでコピー、画像で保存、CSVでExcelへ。用途に合わせて持ち出せます。" },
+  ]}
+  faq={FAQ}
+  about={[
+    ["しくみ", "入れた名前を、指定したグループの数に、なるべく均等になるようランダムに割り振ります。条件があるときは、守れる組み合わせを探します。"],
+    ["保存", "入れた名前と結果は、どこにも送らず、保存もしません。ページを閉じると消えます。"],
+    ["人数", "500人まで。1グループの人数は100人までです。"],
+  ]}
+  corp="たとえば「過去の組み合わせを覚えておいて、毎回ちがうメンバーになるよう研修の班を決める」ような、専用ツールもつくれます。"
+  updated="2026-09-30"
+>
+  <div class="tp-panel">
+    <div class="tp-split">
+      <form class="tp-in" id="grp-form" novalidate>
+        <NamesField id="grp-names" hint="1行に1人（★でリーダー・,で部署）" placeholder="★田中&#10;★佐藤&#10;鈴木&#10;高橋&#10;山田&#10;伊藤" />
+        <p class="grp-lead-note" id="grp-lead-note" role="status" hidden></p>
+        <div class="sets">
+          <div class="set">
+            <span class="set-l">グループの数</span>
+            <Stepper id="grp-groups" label="グループの数" value={2} max={500} />
+          </div>
+          <div class="set">
+            <span class="set-l">1グループの人数</span>
+            <Stepper id="grp-per" label="1グループの人数" value={4} max={100} />
+          </div>
+          <p class="set-sum" id="grp-sum" aria-live="polite"></p>
+          <div class="set">
+            <span class="set-l">グループの名前</span>
+            <div class="pick" id="grp-label" role="group" aria-label="グループの名前">
+              <button type="button" data-v="abc" aria-pressed="true">A・B・C</button>
+              <button type="button" data-v="num" aria-pressed="false">1班・2班</button>
+            </div>
+          </div>
+          <label class="chk"><input type="checkbox" id="grp-even" checked />人数をなるべく均等にする</label>
+          <label class="chk"><input type="checkbox" id="grp-random" checked />ランダムに分ける<span class="fld-hint">（外すと入れた順）</span></label>
+          <label class="chk"><input type="checkbox" id="grp-leader" />リーダーを決める<span class="fld-hint">（★がいないグループはランダム）</span></label>
+          <label class="chk" id="grp-spread-row" hidden><input type="checkbox" id="grp-spread" checked />部署などをばらけさせる<span class="fld-hint">（,のあとの文字）</span></label>
+        </div>
+        <details class="more">
+          <summary><Icon name="chevron" size={16} />条件をつける（任意）</summary>
+          <div class="more-body">
+            <label class="fld">
+              <span class="fld-l">別のグループにしたい組み合わせ<span class="fld-hint">1行に1組</span></span>
+              <textarea class="ta sm" id="grp-apart" rows="3" placeholder="田中 佐藤" spellcheck="false"></textarea>
+            </label>
+            <label class="fld">
+              <span class="fld-l">同じグループにしたい組み合わせ<span class="fld-hint">1行に1組</span></span>
+              <textarea class="ta sm" id="grp-together" rows="3" placeholder="鈴木 高橋" spellcheck="false"></textarea>
+            </label>
+          </div>
+        </details>
+        <button type="submit" class="btn btn-primary btn-lg btn-block"><Icon name="shuffle" size={18} />グループに分ける</button>
+        <div class="msgs" id="grp-msgs"></div>
+      </form>
+
+      <div class="tp-out" id="grp-out">
+        <div class="empty">
+          <div class="re-ic"><Icon name="users" size={22} tool /></div>
+          <p class="re-t">ここにグループが出ます</p>
+          <p class="re-d">名前を入れて「グループに分ける」を押してください。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</ToolPage>
+
+<script>
+  import "../../scripts/tools/group.js";
+</script>
+
+<style is:global>
+  .set-sum{font-size:14px;font-weight:700;color:var(--primary-ink);padding:10px 0;border-bottom:1px solid var(--line)}
+  .gp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:var(--g-md) var(--g-md)}
+  .gp{min-width:0}
+  .gp-h{display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding-bottom:8px;border-bottom:3px solid var(--hue)}
+  .gp-h b{font-family:var(--font-display);font-weight:800;font-size:19px;color:var(--ink)}
+  .gp-h span{font-size:13px;color:var(--muted)}
+  .gp ol{list-style:none}
+  .gp li{display:flex;align-items:center;gap:8px;min-height:44px;padding:8px 2px;border-bottom:1px solid var(--line);font-weight:700;font-size:16px;color:var(--ink);overflow-wrap:anywhere}
+  .gp li::before{content:"";width:8px;height:8px;border-radius:99px;background:var(--hue);flex-shrink:0}
+  .gp li small{margin-left:auto;font-size:12.5px;font-weight:500;color:var(--muted);white-space:nowrap}
+  .grp-lead-note{font-size:14px;font-weight:700;color:var(--warn-ink);background:var(--warn-bg);border-radius:10px;padding:8px 12px;margin-top:-8px}
+  .grp-lead-note[hidden]{display:none}
+  .gp-lead{display:inline-flex;align-items:center;gap:3px;font-size:11.5px;font-weight:700;color:var(--warn-ink);background:var(--warn-bg);border-radius:99px;padding:1px 8px;white-space:nowrap}
+</style>

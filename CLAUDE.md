@@ -1,9 +1,15 @@
 # CLAUDE.md — insemble tools
 
+## 最初に読むもの
+- ツールページ（/xxx/）の追加や、トップの一覧を直すときは、作業の前に必ず `制作ルール.md` を読み、その手順とチェックリストに従う（下の1行で自動で読み込まれる）。
+- @制作ルール.md
+
 ## 前提
 - Astro + Tailwind v4。ホスティングは Xserver（静的HTML＋PHP）。
 - React などのUIライブラリは使わない。画面は `.astro`、動きは `src/scripts/` の素の JS。あとから差し込む HTML に外部の値を入れるときは必ず `esc()` を通す。
 - OGPの取得は `public/api/ogp.php`、採点は `src/lib/ogp.js`。
+- 端末内のツール（PDF・席順・Excel・ルーレット・グループ分け）は `src/layouts/ToolPage.astro` の枠を使い、処理はすべてブラウザ内。サーバーに送る処理を足さない。
+- ogp.css / hub.css が @layer の外で余白をリセットしているため、Tailwind の余白ユーティリティは効かない。ツールのCSSは `src/styles/tools.css` とトークンで書く。
 - 詳しくは README.md。
 
 ## デザインのルール（崩さないこと）

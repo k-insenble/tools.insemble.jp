@@ -1,0 +1,140 @@
+---
+/* PDFばらし屋：PDFから文字・画像・ページ画像を取り出す。動きは src/scripts/tools/pdf.js
+   PDFはブラウザの中だけで読む（サーバーには送らない）。pdf.js は PDF を選んだときに読み込む */
+import ToolPage from "../../layouts/ToolPage.astro";
+import Icon from "../../components/Icon.astro";
+
+const FAQ = [
+  { q: "PDFはどこかに送られますか？", a: "送られません。読み取りはすべて、お使いのブラウザの中で行います。ファイルが運営者のサーバーや外部のサービスに届くことはありません。ページを閉じると、読み込んだ内容も消えます。" },
+  { q: "文字が取り出せないPDFがあります", a: "紙をスキャンしたPDFや、文字を画像として貼ったPDFには、文字のデータが入っていません。その場合は「ページを画像化」で画像として取り出し、文字認識（OCR）のできるアプリで読み取ってください。" },
+  { q: "取り出した文字の順番や改行がおかしいです", a: "PDFの中では、文字の並び順が見た目どおりとは限りません。段組みや表が多いPDFでは、読む順番がずれたり、改行が入ったりすることがあります。コピーしたあとで整えてください。" },
+  { q: "「画像を抽出」と「ページを画像化」のちがいは？", a: "「画像を抽出」は、PDFに貼られている写真やイラストを1枚ずつ取り出します。「ページを画像化」は、ページ全体を見たままの1枚の画像（PNG）にします。資料をスライドやSNSに載せたいときは「ページを画像化」が便利です。" },
+  { q: "パスワード付きのPDFも使えますか？", a: "開くためのパスワードがかかったPDFは、パスワードを入れれば読み取れます。パスワードもブラウザの中だけで使い、どこにも送りません。" },
+  { q: "大きなPDFでも大丈夫ですか？", a: "ページ数が多いPDFや、写真の多いPDFは、処理に時間がかかります。スマホでは途中で止まることもあるため、100ページを超えるものはパソコンでの利用がおすすめです。途中で「中止」もできます。" },
+];
+---
+<ToolPage
+  slug="pdf-extract"
+  title="PDFばらし屋｜PDFの文字・画像をまとめて取り出す無料ツール｜insemble tools"
+  description="PDFをドロップするだけで、全ページの文字・ページごとのテキスト・貼られている画像・ページ画像をまとめて取り出せる無料ツール。全部入りのZIPも1クリック。ファイルはブラウザの中だけで処理し、送信しません。"
+  ogTitle="PDFばらし屋｜PDFを、使える素材にばらす"
+  h1="PDFばらし屋｜PDFの文字・画像を取り出す無料ツール"
+  lead={["PDFを、", "使える素材", "にばらす。"]}
+  sub="文字・画像・ページ画像を取り出して、まとめてZIPに。ファイルはどこにも送りません。"
+  meta={[["check", "端末内で処理"], ["check", "ファイルは送信しません"]]}
+  steps={[
+    { t: "PDFをドロップ", d: "パソコンならドラッグ＆ドロップ、スマホなら「ファイルを選択」から。" },
+    { t: "取り出すものを選ぶ", d: "テキスト・画像・ページ画像のうち、欲しいものを押すと、その場で一覧が出ます。" },
+    { t: "まとめて持ち出す", d: "コピー、1枚ずつの保存、または「全部まとめてZIP」でフォルダごと保存。" },
+  ]}
+  faq={FAQ}
+  about={[
+    ["しくみ", "pdf.js（Mozilla が公開しているPDFの読み取りプログラム）を使い、お使いのブラウザの中で文字と画像を取り出します。"],
+    ["保存", "PDFと取り出した内容は、どこにも送らず、保存もしません。ページを閉じると消えます。"],
+    ["書き出せる形", "文字は .txt（UTF-8）、画像とページ画像は .png、まとめて .zip"],
+  ]}
+  corp="たとえば「社内の申請書PDFから決まった項目だけを抜き出してExcelにする」ような、業務に合わせた専用ツールもつくれます。"
+  updated="2026-09-30"
+>
+  <div class="tp-panel pdfx" id="pdfx">
+    <!-- 1. ファイルを選ぶ -->
+    <div class="pdfx-pick" data-stage="pick">
+      <label class="drop" id="pdf-drop">
+        <input type="file" id="pdf-file" accept="application/pdf,.pdf" />
+        <span class="drop-ic"><Icon name="upload" size={26} /></span>
+        <span class="drop-t">PDFをここにドロップ</span>
+        <span class="drop-d">または</span>
+        <span class="btn btn-primary btn-lg"><Icon name="file" size={17} />ファイルを選択</span>
+      </label>
+      <form class="pdfx-pass" id="pdf-pass" hidden>
+        <label class="fld">
+          <span class="fld-l">このPDFにはパスワードがかかっています</span>
+          <input class="inp" type="password" autocomplete="off" placeholder="PDFを開くパスワード" />
+        </label>
+        <button class="btn btn-primary" type="submit">開く</button>
+      </form>
+      <div class="msgs" id="pdf-pick-msgs"></div>
+    </div>
+
+    <!-- 2. 取り出す -->
+    <div class="pdfx-work" data-stage="work" hidden>
+      <div class="pdfx-file">
+        <span class="pdfx-file-ic"><Icon name="file" size={22} /></span>
+        <div class="pdfx-file-main">
+          <p class="pdfx-name" id="pdf-name"></p>
+          <p class="pdfx-meta" id="pdf-meta"></p>
+        </div>
+        <button type="button" class="btn btn-ghost" id="pdf-reset"><Icon name="reset" size={15} />別のPDFにする</button>
+      </div>
+
+      <div class="pdfx-acts" role="group" aria-label="取り出すもの">
+        <button type="button" class="pdfx-act" data-act="text" aria-pressed="false"><Icon name="text" size={18} /><span>テキストを抽出</span><span class="pdfx-n" hidden></span></button>
+        <button type="button" class="pdfx-act" data-act="images" aria-pressed="false"><Icon name="image" size={18} /><span>画像を抽出</span><span class="pdfx-n" hidden></span></button>
+        <button type="button" class="pdfx-act" data-act="pages" aria-pressed="false"><Icon name="pages" size={18} /><span>ページを画像化</span><span class="pdfx-n" hidden></span></button>
+        <button type="button" class="btn btn-primary pdfx-zip" data-act="zip"><Icon name="download" size={17} />全部まとめてZIP</button>
+      </div>
+
+      <div class="prog" id="pdf-prog" hidden>
+        <span class="spin dark" aria-hidden="true"></span>
+        <span id="pdf-prog-t" role="status"></span>
+        <span class="prog-bar"><i></i></span>
+        <button type="button" class="btn btn-ghost btn-sm" id="pdf-cancel">中止</button>
+      </div>
+      <div class="msgs" id="pdf-msgs"></div>
+
+      <div class="pdfx-out" id="pdf-out">
+        <div class="empty">
+          <div class="re-ic"><Icon name="pages" size={22} /></div>
+          <p class="re-t">取り出すものを選んでください</p>
+          <p class="re-d">テキスト・画像・ページ画像は、それぞれ押すとここに一覧が出ます。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</ToolPage>
+
+<script>
+  import "../../scripts/tools/pdf.js";
+</script>
+
+<style is:global>
+  .pdfx{padding:var(--g-md)}
+  @media(max-width:560px){.pdfx{padding:var(--g-sm)}}
+  .pdfx-pick{display:flex;flex-direction:column;gap:var(--g-sm)}
+  .pdfx-pass{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap}
+  .pdfx-pass .fld{flex:1;min-width:220px}
+  .pdfx-pass .btn{min-height:48px}
+  .pdfx-work{display:flex;flex-direction:column;gap:var(--g-sm)}
+  .pdfx-file{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding-bottom:var(--g-sm);border-bottom:1px solid var(--line)}
+  .pdfx-file-ic{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;color:var(--primary-ink);background:var(--primary-soft);flex-shrink:0}
+  .pdfx-file-main{flex:1;min-width:0}
+  .pdfx-name{font-family:var(--font-display);font-weight:800;font-size:17px;color:var(--ink);overflow-wrap:anywhere}
+  .pdfx-meta{font-size:14px;color:var(--muted);margin-top:2px}
+  .pdfx-acts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) minmax(0,1.2fr);gap:8px}
+  @media(max-width:760px){.pdfx-acts{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  .pdfx-act{display:flex;align-items:center;justify-content:center;gap:8px;min-height:52px;padding:8px 12px;border-radius:var(--r);border:1.5px solid var(--line-2);background:#fff;font-family:var(--font-display);font-weight:800;font-size:15px;color:var(--ink-2);transition:.15s}
+  .pdfx-act svg{color:var(--primary)}
+  .pdfx-act:hover{border-color:var(--primary);color:var(--primary-ink)}
+  .pdfx-act[aria-pressed="true"]{border-color:var(--primary);color:var(--primary-ink);background:var(--primary-soft);box-shadow:inset 0 0 0 1px var(--primary)}
+  .pdfx-act:disabled,.pdfx-zip:disabled{cursor:wait}
+  .pdfx-n{font-family:var(--font-body);font-size:12px;font-weight:700;background:#fff;color:var(--primary-ink);border:1px solid var(--primary-soft-2);border-radius:99px;padding:0 8px}
+  .pdfx-zip{min-height:52px;justify-content:center;border-radius:var(--r);font-size:15px}
+  .spin.dark{border-color:var(--line-2);border-top-color:var(--primary);flex-shrink:0}
+  .pdfx-out{min-height:12em;display:flex;flex-direction:column}
+  /* テキスト */
+  .pdfx-pages{display:flex;flex-direction:column;border-top:1px solid var(--line)}
+  .pdfx-pg{border-bottom:1px solid var(--line);padding:12px 0}
+  .pdfx-pg-h{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+  .pdfx-pg-t{font-family:var(--font-display);font-weight:800;font-size:14.5px;color:var(--ink)}
+  .pdfx-pg-t small{font-family:var(--font-body);font-weight:500;font-size:12.5px;color:var(--muted);margin-left:8px}
+  .pdfx-txt{white-space:pre-wrap;overflow-wrap:anywhere;font-family:var(--font-body);font-size:15px;line-height:1.8;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:var(--r-sm);padding:12px 14px;max-height:20em;overflow:auto}
+  .pdfx-txt.none{color:var(--muted);font-size:14px}
+  /* 画像 */
+  .pdfx-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:var(--g-sm)}
+  .pdfx-fig{display:flex;flex-direction:column;gap:6px;min-width:0}
+  .pdfx-thumb{aspect-ratio:1/1;display:grid;place-items:center;background:var(--paper) repeating-conic-gradient(oklch(0.93 0.003 225) 0 25%,transparent 0 50%) 50%/16px 16px;border:1px solid var(--line);border-radius:var(--r-sm);overflow:hidden}
+  .pdfx-thumb.page{aspect-ratio:1/1.3;background:var(--paper)}
+  .pdfx-thumb img{max-width:100%;max-height:100%;object-fit:contain;display:block}
+  .pdfx-cap{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:13px;color:var(--muted)}
+  .pdfx-cap .icon-btn{width:36px;height:36px}
+</style>

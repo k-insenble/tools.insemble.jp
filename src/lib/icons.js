@@ -20,6 +20,25 @@ const P = {
   eye: '<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3"/>',
   code: '<polyline points="9 8 4 12 9 16"/><polyline points="15 8 20 12 15 16"/>',
   list: '<line x1="8" y1="7" x2="20" y2="7"/><line x1="8" y1="12" x2="20" y2="12"/><line x1="8" y1="17" x2="20" y2="17"/><circle cx="4" cy="7" r="0.8" fill="currentColor" stroke="none"/><circle cx="4" cy="12" r="0.8" fill="currentColor" stroke="none"/><circle cx="4" cy="17" r="0.8" fill="currentColor" stroke="none"/>',
+  /* 追加したツール（PDF・席順・Excel・ルーレット・グループ分け）で使うもの */
+  upload: '<path d="M12 16V5"/><polyline points="7 9 12 4 17 9"/><path d="M5 20h14"/>',
+  file: '<path d="M14 3.5H7A1.5 1.5 0 0 0 5.5 5v14A1.5 1.5 0 0 0 7 20.5h10a1.5 1.5 0 0 0 1.5-1.5V8L14 3.5Z"/><polyline points="14 3.5 14 8 18.5 8"/>',
+  text: '<line x1="5" y1="6" x2="19" y2="6"/><line x1="5" y1="10.5" x2="19" y2="10.5"/><line x1="5" y1="15" x2="19" y2="15"/><line x1="5" y1="19.5" x2="13" y2="19.5"/>',
+  image: '<rect x="4" y="5" width="16" height="14" rx="2.5"/><circle cx="9" cy="10" r="1.6"/><path d="m5 17 4.2-4.2a1.6 1.6 0 0 1 2.2 0L19 19"/>',
+  pages: '<rect x="7.5" y="3.5" width="12" height="15" rx="1.8"/><path d="M4.5 7v11.5A2 2 0 0 0 6.5 20.5h9"/>',
+  zip: '<path d="M6 3.5h12v17H6z"/><path d="M11 3.5v2h2v2h-2v2h2v2h-2"/><rect x="10.5" y="13" width="3" height="3.5" rx=".8"/>',
+  shuffle: '<polyline points="16 4 20 4 20 8"/><path d="M4 18 20 4"/><polyline points="20 16 20 20 16 20"/><path d="M14.5 14.5 20 20"/><path d="M4 5.5 9 10.5"/>',
+  reset: '<path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><polyline points="4.5 4 4.5 7.5 8 7.5"/>',
+  trash: '<path d="M4.5 7h15"/><path d="M9.5 7V4.5h5V7"/><path d="M6.5 7l1 12.5h9l1-12.5"/>',
+  plus: '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+  minus: '<line x1="5" y1="12" x2="19" y2="12"/>',
+  up: '<polyline points="6 15 12 9 18 15"/>',
+  down: '<polyline points="6 9 12 15 18 9"/>',
+  dup: '<rect x="8.5" y="8.5" width="11" height="11" rx="2"/><path d="M15.5 8.5V6a1.5 1.5 0 0 0-1.5-1.5H6A1.5 1.5 0 0 0 4.5 6v8A1.5 1.5 0 0 0 6 15.5h2.5"/>',
+  sort: '<line x1="7" y1="5" x2="7" y2="19"/><polyline points="4 16 7 19 10 16"/><line x1="13" y1="7" x2="20" y2="7"/><line x1="13" y1="12" x2="18" y2="12"/><line x1="13" y1="17" x2="16" y2="17"/>',
+  expand: '<polyline points="4 9 4 4 9 4"/><polyline points="15 4 20 4 20 9"/><polyline points="20 15 20 20 15 20"/><polyline points="9 20 4 20 4 15"/>',
+  crown: '<path d="M4 8l4 4 4-7 4 7 4-4-1.5 10.5h-13L4 8Z"/>',
+  users: '<circle cx="9" cy="8.5" r="3.2"/><path d="M3.5 19.5a5.5 5.5 0 0 1 11 0"/><circle cx="16.5" cy="9.5" r="2.5"/><path d="M16 14.2a4.6 4.6 0 0 1 4.8 4.6"/>',
 };
 
 /* ツール用（ハブの一覧・お気に入り。線は少し細め） */
@@ -49,6 +68,11 @@ const T = {
   dice: '<rect x="4.5" y="4.5" width="15" height="15" rx="3.5"/><circle cx="9" cy="9" r="1.2" fill="currentColor" stroke="none"/><circle cx="15" cy="15" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/>',
   palette: '<path d="M12 20a8 8 0 1 1 8-8c0 2.2-1.8 3-3.4 3H15a2 2 0 0 0-1.4 3.4A1.8 1.8 0 0 1 12 20Z"/><circle cx="8.6" cy="10.4" r="1.1" fill="currentColor" stroke="none"/><circle cx="12" cy="7.8" r="1.1" fill="currentColor" stroke="none"/><circle cx="15.4" cy="9.6" r="1.1" fill="currentColor" stroke="none"/>',
   clock: '<circle cx="12" cy="12" r="8"/><polyline points="12 7.5 12 12 15.5 13.8"/>',
+  pdf: '<path d="M14 3.5H7A1.5 1.5 0 0 0 5.5 5v14A1.5 1.5 0 0 0 7 20.5h10a1.5 1.5 0 0 0 1.5-1.5V8L14 3.5Z"/><polyline points="14 3.5 14 8 18.5 8"/><path d="M8.5 13.5h7M8.5 16.5h4.5"/>',
+  seat: '<rect x="6.5" y="9" width="11" height="6" rx="1.6"/><circle cx="9" cy="5.5" r="1.4"/><circle cx="15" cy="5.5" r="1.4"/><circle cx="9" cy="18.5" r="1.4"/><circle cx="15" cy="18.5" r="1.4"/>',
+  sheet: '<rect x="4" y="4.5" width="16" height="15" rx="2"/><line x1="4" y1="9.5" x2="20" y2="9.5"/><line x1="4" y1="14.5" x2="20" y2="14.5"/><line x1="10" y1="4.5" x2="10" y2="19.5"/>',
+  wheel: '<circle cx="12" cy="12.5" r="8"/><line x1="12" y1="4.5" x2="12" y2="20.5"/><line x1="5.1" y1="8.5" x2="18.9" y2="16.5"/><line x1="5.1" y1="16.5" x2="18.9" y2="8.5"/><path d="M10.5 2.5h3L12 5Z" fill="currentColor"/>',
+  users: '<circle cx="9" cy="8.5" r="3.2"/><path d="M3.5 19.5a5.5 5.5 0 0 1 11 0"/><circle cx="16.5" cy="9.5" r="2.5"/><path d="M16 14.2a4.6 4.6 0 0 1 4.8 4.6"/>',
 };
 
 const draw = (paths, size, stroke, style, cls) =>
