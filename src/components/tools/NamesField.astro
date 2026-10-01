@@ -1,0 +1,14 @@
+---
+/* 参加者（1行1人）の入力欄。席順・ルーレット・グループ分けで共通 */
+interface Props {
+  id: string;
+  label?: string;
+  placeholder?: string;
+  hint?: string;
+}
+const { id, label = "参加者", placeholder = "田中\n佐藤\n鈴木\n高橋\n山田\n伊藤", hint = "1行に1人" } = Astro.props;
+---
+<label class="fld">
+  <span class="fld-l"><span>{label}<span class="tp-count" id={`${id}-count`} style="margin-left:8px">0人</span></span><span class="fld-hint">{hint}</span></span>
+  <textarea class="ta" id={id} rows="8" placeholder={placeholder} autocomplete="off" autocapitalize="off" spellcheck="false"></textarea>
+</label>

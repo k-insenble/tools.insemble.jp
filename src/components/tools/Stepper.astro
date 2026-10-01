@@ -1,0 +1,18 @@
+---
+/* −／＋ つきの数字欄。動きは src/scripts/tools/common.js の stepper() */
+import Icon from "../Icon.astro";
+
+interface Props {
+  id: string;
+  label: string;   // 読み上げ用（見た目のラベルは横に置く）
+  value: number;
+  min?: number;
+  max?: number;
+}
+const { id, label, value, min = 1, max = 500 } = Astro.props;
+---
+<div class="stepper" id={id}>
+  <button type="button" data-step="-1" aria-label={`${label}を1減らす`}><Icon name="minus" size={18} /></button>
+  <input type="number" inputmode="numeric" min={min} max={max} value={value} aria-label={label} />
+  <button type="button" data-step="1" aria-label={`${label}を1増やす`}><Icon name="plus" size={18} /></button>
+</div>

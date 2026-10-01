@@ -1,0 +1,152 @@
+---
+/* イベント用ルーレット：名前を入れて回すだけ。当たった人は外して次へ。動きは src/scripts/tools/roulette.js */
+import ToolPage from "../../layouts/ToolPage.astro";
+import Icon from "../../components/Icon.astro";
+import NamesField from "../../components/tools/NamesField.astro";
+
+const FAQ = [
+  { q: "入れた名前はどこかに送られますか？", a: "送られません。ルーレットはすべてお使いのブラウザの中で動きます。名前や結果が運営者のサーバーに届くことはなく、保存もしません。" },
+  { q: "当たった人を次から外すには？", a: "「当たった人は次から外す」がオン（はじめからオン）なら、自動で外れます。順番決めなら、回すたびに1人ずつ決まっていきます。外した人は、名前の一覧を押すと戻せます。「全員に戻す」で最初からやり直せます。" },
+  { q: "結果はかたよりませんか？", a: "当たる人は、回し始める前にブラウザの暗号用の乱数（crypto.getRandomValues）で決めています。全員が同じ確率で当たり、ルーレットの止まる位置はその結果に合わせて動かしています。" },
+  { q: "プロジェクターや大きな画面で見せたいです", a: "「大きく表示」を押すと、ルーレットと結果だけを画面いっぱいに出せます。もう一度押すか、Escキーで元に戻ります。" },
+  { q: "決まった順番を共有したいです", a: "下の「結果」にある「コピー」を押すと、「1. 田中」のような番号つきの一覧をコピーできます。チャットにそのまま貼れます。" },
+  { q: "何人まで入れられますか？", a: "500人まで入れられます。人数が多いと1つ1つの枠が細くなるため、ルーレット上の名前は短く省略して表示します（結果は省略しません）。" },
+];
+const PRESETS = ["順番決め", "当番", "発表者", "景品の当選者", "司会"];
+---
+<ToolPage
+  slug="roulette"
+  title="イベント用ルーレット｜名前を入れて回すだけの抽選ツール｜insemble tools"
+  description="名前を入れて回すだけの無料ルーレット。順番決め・当番決め・発表者決め・景品抽選に。当たった人は自動で外せるので、順番決めもテンポよく。大きく表示してプロジェクターでも使えます。"
+  ogTitle="イベント用ルーレット｜「決める」を、ちょっと楽しく"
+  h1="イベント用ルーレット｜順番決め・抽選ツール"
+  lead={["「決める」を、", "ちょっと楽しく", "。"]}
+  sub="名前を入れて回すだけ。当たった人は外して、順番決めや抽選をテンポよく。"
+  meta={[["check", "端末内で処理"], ["check", "名前は送信しません"]]}
+  steps={[
+    { t: "名前を入れる", d: "1行に1人。入れたそばからルーレットに並びます。" },
+    { t: "回す", d: "「回す」を押すと、止まった人が大きく出ます。大きく表示すれば、みんなで見られます。" },
+    { t: "外して、次へ", d: "当たった人は自動で外れます。順番は「結果」に残るので、コピーして共有できます。" },
+  ]}
+  faq={FAQ}
+  about={[
+    ["しくみ", "当たる人を先にブラウザの乱数で決め、その人の枠で止まるようにルーレットを回します。全員が同じ確率です。"],
+    ["保存", "入れた名前と結果は、どこにも送らず、保存もしません。ページを閉じると消えます。"],
+    ["人数", "500人まで。"],
+  ]}
+  corp="たとえば「来場者がスマホで参加できる抽選会」や「キャンペーン用の抽選ページ」のような、イベント向けのWebツールもつくれます。"
+  updated="2026-09-30"
+>
+  <div class="tp-panel">
+    <div class="tp-split rl-split">
+      <div class="tp-in">
+        <label class="fld">
+          <span class="fld-l">何を決める？<span class="fld-hint">なくてもOK</span></span>
+          <input class="inp" id="rl-title" type="text" maxlength="30" placeholder="例：発表の順番" autocomplete="off" />
+        </label>
+        <div class="chips" aria-label="よく使う例">
+          {PRESETS.map((p) => <button type="button" class="chip" data-preset={p}>{p}</button>)}
+        </div>
+        <NamesField id="rl-names" placeholder="田中&#10;佐藤&#10;鈴木&#10;高橋" />
+        <div class="rl-cands" id="rl-cands" hidden>
+          <p class="fld-hint">押すと、外す／戻すを切り替えられます</p>
+          <div class="chips" id="rl-cand-list"></div>
+        </div>
+        <div class="sets">
+          <label class="chk"><input type="checkbox" id="rl-auto" checked />当たった人は次から外す</label>
+        </div>
+        <div class="msgs" id="rl-msgs"></div>
+      </div>
+
+      <div class="tp-out rl-out">
+        <div class="rl-stage" id="rl-stage">
+          <div class="rl-top">
+            <p class="rl-what" id="rl-what"></p>
+            <button type="button" class="btn btn-ghost btn-sm" id="rl-full" aria-pressed="false"><Icon name="expand" size={15} /><span>大きく表示</span></button>
+          </div>
+          <div class="rl-wheel-wrap">
+            <span class="rl-pointer" aria-hidden="true"></span>
+            <div class="rl-wheel" id="rl-wheel" aria-hidden="true"></div>
+            <button type="button" class="rl-hub" id="rl-hub" aria-label="ルーレットを回す">回す</button>
+          </div>
+          <p class="rl-left" id="rl-left" aria-live="polite"></p>
+          <button type="button" class="btn btn-primary btn-lg rl-go" id="rl-go"><Icon name="reset" size={19} />回す</button>
+
+          <!-- 結果（止まったら出る） -->
+          <div class="rl-result" id="rl-result" role="dialog" aria-modal="false" aria-labelledby="rl-win" hidden>
+            <div class="rl-confetti" aria-hidden="true"></div>
+            <p class="rl-k" id="rl-k">選ばれたのは</p>
+            <p class="rl-win" id="rl-win"></p>
+            <div class="rl-result-acts">
+              <button type="button" class="btn btn-primary btn-lg" id="rl-next"><Icon name="reset" size={18} />次を回す</button>
+              <button type="button" class="btn btn-ghost btn-lg" id="rl-close">閉じる</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="rl-hist" id="rl-hist" hidden>
+          <div class="rl-hist-h">
+            <h3 class="tp-h"><Icon name="list" size={17} />結果</h3>
+            <div class="acts">
+              <button type="button" class="btn btn-ghost btn-sm" id="rl-copy"><Icon name="copy" size={14} />コピー</button>
+              <button type="button" class="btn btn-ghost btn-sm" id="rl-restore"><Icon name="reset" size={14} />全員に戻す</button>
+              <button type="button" class="btn btn-ghost btn-sm" id="rl-reset"><Icon name="trash" size={14} />リセット</button>
+            </div>
+          </div>
+          <ol class="rl-hist-list" id="rl-hist-list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</ToolPage>
+
+<script>
+  import "../../scripts/tools/roulette.js";
+</script>
+
+<style is:global>
+  .rl-split{grid-template-columns:minmax(0,320px) minmax(0,1fr)}
+  @media(max-width:860px){.rl-split{grid-template-columns:minmax(0,1fr)}}
+  .rl-cands .chips{margin-top:6px;max-height:11em;overflow:auto}
+  .rl-cands .chip{font-size:14px}
+  .rl-cands .chip.off{text-decoration:line-through;color:var(--muted);background:var(--paper);box-shadow:none;border-style:dashed}
+  .rl-out{gap:var(--g-md)}
+  .rl-stage{position:relative;display:flex;flex-direction:column;align-items:center;gap:var(--g-sm)}
+  .rl-top{align-self:stretch;display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:36px}
+  .rl-what{font-family:var(--font-display);font-weight:800;font-size:clamp(18px,2.6vw,24px);color:var(--ink);overflow-wrap:anywhere}
+  .rl-wheel-wrap{position:relative;width:min(100%,520px);aspect-ratio:1/1}
+  .rl-wheel{width:100%;height:100%;border-radius:50%;box-shadow:0 18px 40px -22px rgba(20,38,52,.45),0 0 0 6px #fff,0 0 0 8px var(--line-2);transition:transform 4.6s cubic-bezier(.12,.72,.08,1);will-change:transform}
+  .rl-wheel svg{display:block;width:100%;height:100%}
+  .rl-pointer{position:absolute;left:50%;top:-6px;z-index:3;width:34px;height:40px;transform:translateX(-50%);background:var(--ink);clip-path:polygon(0 0,100% 0,50% 100%);filter:drop-shadow(0 3px 3px rgba(0,0,0,.25))}
+  .rl-stage.spinning .rl-pointer{animation:rlTick .12s ease-in-out infinite alternate}
+  @keyframes rlTick{from{transform:translateX(-50%) rotate(-7deg)}to{transform:translateX(-50%) rotate(7deg)}}
+  .rl-hub{position:absolute;left:50%;top:50%;z-index:2;width:22%;aspect-ratio:1/1;transform:translate(-50%,-50%);border-radius:50%;background:#fff;color:var(--primary-ink);font-family:var(--font-display);font-weight:800;font-size:clamp(15px,2.6vw,22px);box-shadow:0 6px 16px -6px rgba(20,38,52,.45),inset 0 0 0 3px var(--primary);transition:transform .15s}
+  .rl-hub:hover{transform:translate(-50%,-50%) scale(1.05)}
+  .rl-hub:active{transform:translate(-50%,-50%) scale(.95)}
+  .rl-hub:disabled{color:var(--muted);box-shadow:0 6px 16px -6px rgba(20,38,52,.3),inset 0 0 0 3px var(--line-2);cursor:default;transform:translate(-50%,-50%)}
+  .rl-left{font-size:14.5px;font-weight:700;color:var(--muted)}
+  .rl-go{min-width:min(100%,280px);font-size:19px;min-height:60px}
+  .rl-go:disabled{opacity:.6}
+  /* 結果 */
+  .rl-result{position:absolute;inset:0;z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:var(--g-md);text-align:center;background:rgba(255,255,255,.93);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);border-radius:var(--r-lg);animation:tpIn .3s ease both;overflow:hidden}
+  .rl-result[hidden]{display:none}
+  .rl-k{font-family:var(--font-display);font-weight:800;font-size:clamp(16px,2.4vw,20px);color:var(--muted)}
+  .rl-win{font-family:var(--font-display);font-weight:800;font-size:clamp(40px,9vw,88px);line-height:1.2;color:var(--ink);overflow-wrap:anywhere;animation:pop .5s cubic-bezier(.2,.9,.3,1.4) both}
+  .rl-result-acts{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:6px}
+  .rl-confetti{position:absolute;inset:0;pointer-events:none}
+  .rl-confetti i{position:absolute;top:38%;left:50%;width:9px;height:14px;border-radius:2px;animation:rlConfetti 1.5s cubic-bezier(.2,.7,.4,1) forwards}
+  @keyframes rlConfetti{0%{transform:translate(0,0) rotate(0);opacity:1}100%{transform:translate(var(--x),var(--y)) rotate(var(--r));opacity:0}}
+  /* 大きく表示 */
+  .rl-stage.full{position:fixed;inset:0;z-index:100;background:#fff;padding:var(--g-md);justify-content:center;overflow:auto}
+  .rl-stage.full .rl-wheel-wrap{width:min(88vw,74vh)}
+  .rl-stage.full .rl-top{max-width:min(96vw,1000px);width:100%;margin:0 auto}
+  .rl-stage.full .rl-result{border-radius:0;position:fixed}
+  body.rl-lock{overflow:hidden}
+  /* 結果の一覧 */
+  .rl-hist{border-top:3px solid var(--ink);padding-top:var(--g-sm)}
+  .rl-hist-h{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+  .rl-hist-list{list-style:none;counter-reset:rl}
+  .rl-hist-list li{counter-increment:rl;display:flex;align-items:center;gap:12px;min-height:44px;padding:6px 2px;border-bottom:1px solid var(--line);font-weight:700;font-size:16px;color:var(--ink)}
+  .rl-hist-list li::before{content:counter(rl);font-family:var(--font-display);font-weight:800;font-size:13px;color:var(--primary-ink);background:var(--primary-soft);border-radius:99px;min-width:28px;height:28px;display:grid;place-items:center}
+  .rl-hist-list li small{margin-left:auto;font-size:12.5px;font-weight:500;color:var(--muted)}
+</style>

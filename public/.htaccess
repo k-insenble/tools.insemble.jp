@@ -17,10 +17,18 @@ RewriteRule ^(.*)$ /$1/ [L,R=301]
 
 ErrorDocument 404 /404.html
 
+# PDFばらし屋の pdf.js（worker は .mjs、画像の読み取りに .wasm を使う）。種類が合わないとブラウザが読み込まない
+AddType text/javascript .mjs
+AddType application/wasm .wasm
+
 <IfModule mod_headers.c>
   # ファイル名にハッシュが付く Astro の出力は長期キャッシュ
   <If "%{REQUEST_URI} =~ m#^/_astro/#">
     Header set Cache-Control "public, max-age=31536000, immutable"
+  </If>
+  # pdf.js の付属データ（cmaps など）は中身がめったに変わらないので1週間
+  <If "%{REQUEST_URI} =~ m#^/pdfjs/#">
+    Header set Cache-Control "public, max-age=604800"
   </If>
   Header always set X-Content-Type-Options "nosniff"
   Header always set Referrer-Policy "strict-origin-when-cross-origin"
@@ -31,7 +39,8 @@ ErrorDocument 404 /404.html
   # CSP：Report-Only のまま据え置く（止めずに、違反をブラウザのコンソールに出すだけ。守りの主役は esc()）。
   # 本番に切り替えると、計測タグを変えるたびにハッシュの付け直しが必須になるので切り替えない。
   # style の unsafe-inline は結果パネルの style 属性のため。img の https: はチェックしたページの og:image のため。
+  # img の blob: は PDFばらし屋で取り出した画像の表示、font の data: と script の 'wasm-unsafe-eval' は pdf.js（PDFのフォントと画像の読み取り）のため。
   # googletagmanager / google-analytics は Google アナリティクス、clarity.ms / c.bing.com は Microsoft Clarity のため。
   # 'sha256-…' は Base.astro に直接書いた計測タグ（GA・Clarity の2つ）だけを許す印（タグを変えたら付け直す。手順は README）。
-  Header always set Content-Security-Policy-Report-Only "default-src 'self'; script-src 'self' 'sha256-63ay2mWSJZ/2akrBqWe+LvWs9NtpgmZaz5S6wZa43IM=' 'sha256-sU04W4Zt7VoiF6S4Rh2k1VzKwDLoRkhJSGBfz0IQwwQ=' https://*.googletagmanager.com https://*.clarity.ms; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://*.clarity.ms https://c.bing.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+  Header always set Content-Security-Policy-Report-Only "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-63ay2mWSJZ/2akrBqWe+LvWs9NtpgmZaz5S6wZa43IM=' 'sha256-sU04W4Zt7VoiF6S4Rh2k1VzKwDLoRkhJSGBfz0IQwwQ=' https://*.googletagmanager.com https://*.clarity.ms; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://*.clarity.ms https://c.bing.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
 </IfModule>

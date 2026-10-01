@@ -85,11 +85,12 @@ code{font-family:var(--font-mono)}
 
 .hub-search{display:flex;align-items:center;gap:12px;width:100%;max-width:600px;margin:var(--g-lg) 0 0;background:var(--surface);border:2px solid var(--line-2);border-radius:var(--r-lg);padding:0 20px;cursor:text;transition:.18s;box-shadow:var(--shadow)}
 .hub-search:focus-within{border-color:var(--primary);box-shadow:0 0 0 5px var(--primary-soft),var(--shadow-lg)}
-.hub-search input{flex:1;min-width:0;border:none;outline:none;background:none;font-family:var(--font-mono);font-size:15.5px;color:var(--ink);padding:19px 0}
+/* ツール名もURLも入れるので、文字は本文と同じ書体（iOS で拡大されないよう 16px） */
+.hub-search input{flex:1;min-width:0;border:none;outline:none;background:none;font-family:var(--font-body);font-size:16px;color:var(--ink);padding:19px 0}
 .hub-search{padding-right:8px}
 .hub-go{height:48px;padding:0 20px;border-radius:calc(var(--r-lg) - 6px);font-size:15px;flex-shrink:0}
 .hub-err{color:var(--err);font-weight:700}
-@media(max-width:520px){.hub-search{flex-wrap:wrap;padding:8px 12px 12px}.hub-search>svg{display:none}.hub-search input{flex-basis:100%;padding:12px 4px}.hub-go{width:100%;justify-content:center}}
+@media(max-width:520px){.hub-search{padding:0 6px 0 14px;gap:8px}.hub-search>svg{display:none}.hub-go{padding:0 14px}}
 .hub-clear{display:grid;place-items:center;width:26px;height:26px;border-radius:99px;color:var(--muted);background:var(--paper);transition:.15s}
 .hub-clear:hover{color:var(--ink);background:var(--line)}
 .kbd{font-family:var(--font-mono);font-size:12px;font-weight:600;color:var(--muted);border:1px solid var(--line-2);border-bottom-width:2px;border-radius:6px;padding:1px 7px;line-height:1.4}
@@ -148,9 +149,14 @@ code{font-family:var(--font-mono)}
 .f-bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--primary),oklch(0.60 0.09 175))}
 .f-row.top .f-bar i{background:linear-gradient(90deg,oklch(0.62 0.12 70),oklch(0.72 0.12 85))}
 .f-date{font-family:var(--font-mono);font-size:12px;color:var(--muted);white-space:nowrap}
+.f-cat{font-family:var(--font-body);font-weight:700}
 .feat-rows{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr))}
 .f-row{display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:var(--g-sm) var(--g-md) var(--g-sm) 0;text-decoration:none;transition:.16s;position:relative}
 .f-row+.f-row{padding-left:var(--g-md);border-left:1px solid var(--line)}
+/* 公開中が4つ以上になったら3列で折り返す。行の頭は左の線なし、2行目からは上に罫線 */
+.feat-rows:has(.f-row:nth-child(4)){grid-template-columns:repeat(3,minmax(0,1fr))}
+.f-row:nth-child(3n+1){padding-left:0;border-left:none}
+.f-row:nth-child(n+4){border-top:1px solid var(--line)}
 .f-row:hover .f-ic{animation:wiggle .6s ease}
 .f-ic{width:44px;height:44px;border-radius:13px;display:grid;place-items:center;color:#fff;background:linear-gradient(150deg, oklch(0.53 0.095 203), oklch(0.40 0.09 207));border:1px solid transparent;box-shadow:0 4px 10px -3px oklch(0.47 0.095 205 / .5), inset 0 1px 0 rgba(255,255,255,.2)}
 .f-name{font-family:var(--font-display);font-weight:800;font-size:17px;color:var(--ink);display:flex;align-items:center;gap:7px;white-space:nowrap}
@@ -158,7 +164,7 @@ code{font-family:var(--font-mono)}
 .f-go{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:700;color:var(--primary-ink);margin-top:2px}
 .f-row:hover .f-go svg{transform:translateX(3px)}
 .f-go svg{transition:.18s}
-@media(max-width:760px){.feat-rows{grid-template-columns:1fr}.f-row+.f-row{padding-left:0;border-left:none;border-top:1px solid var(--line)}}
+@media(max-width:760px){.feat-rows,.feat-rows:has(.f-row:nth-child(4)){grid-template-columns:1fr}.f-row+.f-row{padding-left:0;border-left:none;border-top:1px solid var(--line)}}
 
 /* セクション見出し */
 .band{background:var(--paper);border-top:1px solid var(--line-2);border-bottom:1px solid var(--line-2);position:relative}
@@ -346,3 +352,51 @@ code{font-family:var(--font-mono)}
 
 /* ロゴの「tools」（Astro版で追加：OGPページと共通） */
 .logo-tx{display:inline-flex;align-items:baseline;gap:5px}.logo-sub{font-weight:700;color:var(--primary-ink)}.ftr .logo-sub{color:var(--primary-soft-2)}
+
+/* ===== トップの組み替え（いま使えるツールを最初に見せる） =====
+   ヒーローは短く、検索欄も小さく。ファーストビューにツールの一覧が入るようにする */
+.hub-hero{padding:var(--g-lg) 0 var(--g-md)}
+.hub-title{font-size:clamp(26px,4.4vw,42px);margin-top:var(--g-sm)}
+.sp-br{display:none}
+@media(max-width:520px){.sp-br{display:inline}}
+.hub-sub{margin-top:var(--g-xs);font-size:15px}
+.hub-search{margin-top:var(--g-md);max-width:560px;border-width:1.5px;border-radius:var(--r);box-shadow:var(--shadow-sm)}
+.hub-search input{padding:13px 0}
+.hub-go{height:42px;border-radius:calc(var(--r) - 5px);font-size:14.5px}
+.hub-meta{margin-top:var(--g-xs);font-size:12.5px}
+.hub-meta strong{font-size:13.5px}
+.feat{margin-top:var(--g-xs)}
+.feat-note{font-size:12.5px;color:var(--muted)}
+/* カードは「リンク＋☆ボタン」。ボタンをリンクの中に入れないよう、外側は div */
+.f-link{display:flex;flex-direction:column;align-items:flex-start;gap:6px;text-decoration:none;color:inherit;width:100%}
+.f-row .fav{position:absolute;top:calc(var(--g-sm) - 4px);right:calc(var(--g-md) - 18px);margin:0}
+.f-row[hidden]{display:none}
+.f-row .f-name{white-space:normal;flex-wrap:wrap;padding-right:30px}
+@media(max-width:760px){
+  /* スマホは、アイコン＋名前と説明の横並びにして、6つを短く見せる */
+  .f-row{padding:12px 0}
+  .f-link{display:grid;grid-template-columns:44px minmax(0,1fr);column-gap:14px;row-gap:2px;align-items:start}
+  .f-top{grid-row:1/3}
+  .f-top .f-cat,.f-go{display:none}
+  .f-name{font-size:16px;padding-right:40px}
+  .f-desc{font-size:13px;line-height:1.6}
+  .f-row .fav{top:6px;right:-6px}
+  .feat-note{display:none}
+}
+/* これから公開するツール（ふだんはたたむ） */
+.soon-box>summary{display:flex;align-items:center;justify-content:space-between;gap:16px;cursor:pointer;list-style:none;padding:var(--g-sm) 0;border-top:3px solid var(--ink);border-bottom:1px solid var(--line)}
+.soon-box>summary::-webkit-details-marker{display:none}
+.soon-main{display:flex;flex-direction:column;gap:2px}
+.soon-t{display:inline-flex;align-items:center;gap:8px;font-family:var(--font-display);font-weight:800;font-size:17px;color:var(--ink)}
+.soon-d{font-size:13px;color:var(--muted)}
+.soon-chev{color:var(--muted);transition:transform .2s;flex-shrink:0}
+.soon-box[open] .soon-chev{transform:rotate(180deg)}
+.soon-box>summary:hover .soon-t{color:var(--primary-ink)}
+.soon-box .cat:first-of-type{margin-top:var(--g-md)}
+.soon-box .cat[hidden]{display:none}
+#no-hit{margin-top:var(--g-sm)}
+/* 検索欄（ボタンなし。type=search のブラウザ標準の×は消して、自前の×を使う） */
+.hub-search{padding:0 10px 0 18px}
+.hub-search input{padding:15px 0}
+.hub-search input::-webkit-search-cancel-button{-webkit-appearance:none;appearance:none}
+.hub-meta[hidden]{display:none}

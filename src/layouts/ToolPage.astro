@@ -1,0 +1,167 @@
+---
+/* 端末内で動くツールページの共通の枠（PDFばらし屋・席順メーカーなど）
+   OGPチェッカーと同じ2層：上＝道具ゾーン（paper。説明は足さない）／下＝読みもの（白）
+   ツール本体は <slot />。読みものの追加は <slot name="guide" />（使い方とよくある質問のあいだ） */
+import Base from "./Base.astro";
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
+import Corp from "../components/Corp.astro";
+import Icon from "../components/Icon.astro";
+import SectionHead from "../components/SectionHead.astro";
+import Faq from "../components/Faq.astro";
+import HUB from "../data/hub.js";
+import { ORG, PUBLISHER } from "../data/org.js";
+import "../styles/ogp.css";
+import "../styles/tools.css";
+
+interface Props {
+  slug: string;
+  title: string;            // <title>
+  description: string;
+  ogTitle?: string;
+  h1: string;               // 小さなバッジの見出し（ツール名｜何をするか）
+  lead: [string, string, string]; // 大きな一文：[前, 強調, 後]
+  sub: string;
+  meta: [icon: string, text: string][]; // パンくず横の「端末内で処理」など
+  steps: { t: string; d: string }[];
+  faq: { q: string; a: string }[];
+  about: [string, string][];
+  corp: string;             // 下の「運営会社」に出す、このツールに合わせた一言
+  appCategory?: string;     // schema.org の applicationCategory
+  updated: string;          // 最終更新日 YYYY-MM-DD
+}
+const { slug, title, description, ogTitle, h1, lead, sub, meta, steps, faq, about, corp, appCategory = "UtilitiesApplication", updated } = Astro.props;
+
+/* 概要の最後には、どのツールでも同じ「料金」「免責」を付ける（書き方は規約 /terms/ にそろえる） */
+const aboutRows: [string, string][] = [
+  ...about,
+  ["料金", "無料・登録不要。PC・スマホどちらでも使えます。"],
+  ["免責", "結果の正確さは保証しません。このツールを使って生じた損害について、当社に故意または重大な過失がある場合を除き、責任を負いません（くわしくは利用規約）。"],
+];
+
+const tool = HUB.TOOLS.find((t) => t.slug === slug);
+const name = tool?.name ?? h1;
+const path = `/${slug}/`;
+const url = new URL(path, Astro.site).href;
+/* 共有用の画像は public/og/<slug>.png（文言は scripts/og/og.config.mjs、作り直すときは npm run og） */
+const live = HUB.TOOLS.filter((t) => t.status === "live");
+
+const jsonLd = [
+  ORG,
+  { "@context": "https://schema.org", "@type": "SoftwareApplication", name, description, applicationCategory: appCategory, operatingSystem: "Web", inLanguage: "ja", url, dateModified: updated, offers: { "@type": "Offer", price: "0", priceCurrency: "JPY" }, publisher: PUBLISHER },
+  { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [["ホーム", new URL("/", Astro.site).href], [name, url]].map(([n, u], i) => ({ "@type": "ListItem", position: i + 1, name: n, item: u })) },
+  { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faq.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })) },
+];
+
+const NAV: [string, string][] = [["/#tools", "ツール一覧"], ["#howto", "使い方"], ["#faq", "よくある質問"]];
+const FOOT: { h: string; items: [string, string][] }[] = [
+  { h: "ツール", items: [...live.map((t) => [t.name, "/" + t.slug + "/"] as [string, string]), ["ツール一覧", "/#tools"]] },
+  { h: "このページ", items: [["使い方", "#howto"], ["よくある質問", "#faq"], ["関連ツール", "#related"]] },
+];
+
+/* 関連ツール：同じカテゴリの公開中 → ほかの公開中 の順に4つ */
+const related = live.filter((t) => t.slug !== slug)
+  .sort((a, b) => Number(b.cat === tool?.cat) - Number(a.cat === tool?.cat)).slice(0, 4);
+---
+<Base title={title} description={description} path={path} ogTitle={ogTitle} ogImage={new URL(`/og/${slug}.png`, Astro.site).href} jsonLd={jsonLd}>
+  <Header nav={NAV} />
+
+  <main>
+    <!-- ===== 道具ゾーン ===== -->
+    <div class="tool-zone" id="tool">
+      <div class="wrap tooltop">
+        <nav class="crumb" aria-label="パンくずリスト">
+          <ol>
+            <li><a href="/">ホーム</a></li>
+            <li><span aria-current="page">{name}</span></li>
+          </ol>
+        </nav>
+        <div class="tmeta">
+          {meta.map(([ic, text]) => <span><Icon name={ic} size={13} />{text}</span>)}
+          <span>最終更新 <time datetime={updated}>{updated.replace(/-/g, "/")}</time></span>
+        </div>
+      </div>
+
+      <section class="hero tz-hero">
+        <div class="hero-glow"></div>
+        <div class="wrap hero-in">
+          <h1 class="badge"><Icon name="sparkle" size={14} />{h1}</h1>
+          <p class="hero-title">{lead[0]}<span class="hl">{lead[1]}</span>{lead[2]}</p>
+          <p class="tz-sub">{sub}</p>
+        </div>
+      </section>
+
+      <!-- 入れた名前・予定・PDFの中身は、Clarity の録画で伏せ字にする -->
+      <section class="wrap" aria-label={name} data-clarity-mask="True">
+        <slot />
+      </section>
+    </div>
+
+    <!-- ===== 読みものゾーン ===== -->
+    <div class="read-zone" id="learn">
+      <div class="wrap">
+        <div class="read-head">
+          <div>
+            <div class="read-k"><Icon name="book" size={15} />はじめての方へ</div>
+            <h2 class="read-t">{name}の使い方</h2>
+          </div>
+          <nav class="read-toc" aria-label="このセクションの目次">
+            {[["#howto", "使い方"], ["#faq", "よくある質問"], ["#related", "関連ツール"]].map(([h, l]) => <a href={h}>{l}</a>)}
+          </nav>
+        </div>
+      </div>
+
+      <section class="wrap sec sec-tight" id="howto" style="scroll-margin-top:72px" aria-label="使い方">
+        <div class="steps reveal">
+          {steps.map((s, i) => (
+            <div class="step">
+              <div class="step-n">{i + 1}</div>
+              <div class="step-t">{s.t}</div>
+              <p class="step-d">{s.d}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <slot name="guide" />
+
+      <section class="wrap sec">
+        <SectionHead id="faq" kicker="よくある質問" title="つまずきやすいポイント Q&A" />
+        <Faq items={faq} />
+      </section>
+
+      <section class="wrap sec sec-tight">
+        <SectionHead id="related" kicker="関連ツール" title="あわせて使えるツール" sub="どれも無料・登録不要で、ブラウザだけで使えます。" />
+        <div class="tools">
+          {related.map((t) => (
+            <a class="t-row reveal" href={"/" + t.slug + "/"}>
+              <span class="t-ic"><Icon name={t.icon} size={20} tool /></span>
+              <div class="t-main">
+                <div class="t-name">{t.name}{t.isNew && <span class="lbl new">NEW</span>}</div>
+                <p class="t-desc">{t.desc}</p>
+              </div>
+              <Icon name="arrow" size={17} class="t-arrow" />
+            </a>
+          ))}
+        </div>
+        <a class="more-link" href="/#tools">すべてのツールを見る<Icon name="arrow" size={15} /></a>
+      </section>
+
+      <section class="wrap sec sec-tight">
+        <SectionHead id="about" kicker="このツールについて" title="安心して使っていただくために" />
+        <div class="about solo">
+          <div>
+            <div class="log-h">概要</div>
+            <dl>
+              {aboutRows.map(([k, v]) => <div><dt>{k}</dt><dd>{v}</dd></div>)}
+            </dl>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <Corp title={["このようなWebツールを、", "自社向けにつくることもできます。"]} desc={corp} cta="Webツール制作のご相談" />
+  </main>
+
+  <Footer cols={FOOT} />
+</Base>

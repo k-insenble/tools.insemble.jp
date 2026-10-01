@@ -25,7 +25,7 @@ const jsonLd = [
 
 const NAV: [string, string][] = [["/#tools", "ツール一覧"], ["#guide", "OGPの基本"], ["#faq", "よくある質問"]];
 const FOOT: { h: string; items: [string, string][] }[] = [
-  { h: "ツール", items: [["OGPチェッカー", "/ogp/"], ["ツール一覧", "/#tools"]] },
+  { h: "ツール", items: [...HUB.TOOLS.filter((t) => t.status === "live").map((t) => [t.name, "/" + t.slug + "/"] as [string, string]), ["ツール一覧", "/#tools"]] },
   { h: "学ぶ", items: [["OGPの基本", "#guide"], ["OGPタグ辞典", "#glossary"], ["よくある質問", "#faq"]] },
 ];
 
@@ -36,8 +36,8 @@ const STEPS = [
 ];
 const GUIDE = D.GUIDE.filter((_, i) => [0, 2].includes(i));
 
-/* 関連ツール：公開中を先に、同じカテゴリ（メタタグ・SNS）から5つ。公開中がまだ無いうちは「これから公開」として出す */
-const related = HUB.TOOLS.filter((t) => t.slug !== "ogp" && (t.cat === "meta" || t.cat === "sns"))
+/* 関連ツール：公開中を先に、同じカテゴリ（Web制作・SEO）から5つ。公開中がまだ無いうちは「これから公開」として出す */
+const related = HUB.TOOLS.filter((t) => t.slug !== "ogp" && t.cat === "web")
   .sort((a, b) => (a.status === "live" ? -1 : 1) - (b.status === "live" ? -1 : 1)).slice(0, 5);
 const relatedLive = related.some((t) => t.status === "live");
 const LOG = HUB.CHANGELOG.filter((u) => u.tool === "ogp");
@@ -55,6 +55,7 @@ const ABOUT = [
   description={description}
   path="/ogp/"
   ogTitle="OGPチェッカー｜シェアする前に、見え方をたしかめよう"
+  ogImage="https://tools.insemble.jp/og/ogp.png"
   jsonLd={jsonLd}
 >
   <Header nav={NAV} />

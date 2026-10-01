@@ -4,14 +4,21 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "node scripts/copy-pdfjs.mjs",
     "dev": "astro dev",
+    "prebuild": "node scripts/copy-pdfjs.mjs",
     "build": "astro build",
-    "preview": "astro preview"
+    "preview": "astro preview",
+    "og": "node scripts/og/render.mjs"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.4",
     "@tailwindcss/vite": "^4.1.0",
     "astro": "^7.3.5",
+    "pdfjs-dist": "^6.3.289",
     "tailwindcss": "^4.1.0"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.63.0"
   }
 }

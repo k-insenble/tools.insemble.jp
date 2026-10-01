@@ -7,7 +7,7 @@ interface Props {
   path: string;             // 例 "/" や "/ogp/"
   ogTitle?: string;
   ogDescription?: string;
-  ogImage?: string;         // 絶対URL。未指定なら /og-image.png
+  ogImage?: string;         // 絶対URL。未指定なら /og-image.png（共通。ツールページは /og/<slug>.png）
   jsonLd?: unknown;
   noindex?: boolean;        // 404 など検索に載せないページ。canonical は出さない
 }
