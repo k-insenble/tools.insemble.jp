@@ -9,13 +9,14 @@ import Icon from "../../components/Icon.astro";
 import SectionHead from "../../components/SectionHead.astro";
 import Glossary from "../../components/ogp/Glossary.astro";
 import Faq from "../../components/Faq.astro";
+import Scenes from "../../components/Scenes.astro";
 import D from "../../data/ogp.js";
 import HUB from "../../data/hub.js";
 import { ORG, PUBLISHER } from "../../data/org.js";
 import "../../styles/ogp.css";
 
 const url = "https://tools.insemble.jp/ogp/";
-const description = "URLを入れるだけで、X・Facebook・LINE・Slack・Discord・Teamsでのシェア表示を確認できる無料のOGPチェッカー。採点と直すところ、フレームワーク別のコードまで一度に出します。";
+const description = "URLを入れるだけで、X・Facebook・LINE・Slack・Discord・Teamsでのシェア表示を確認できる無料のOGPチェッカー。サイトの公開やリニューアルのあとに、OGP画像やmetaタグの設定漏れを採点し、直し方のコードまで出します。";
 const jsonLd = [
   ORG,
   { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "OGPチェッカー", description, applicationCategory: "DeveloperApplication", operatingSystem: "Web", inLanguage: "ja", url, dateModified: D.UPDATED, offers: { "@type": "Offer", price: "0", priceCurrency: "JPY" }, publisher: PUBLISHER },
@@ -26,7 +27,7 @@ const jsonLd = [
 const NAV: [string, string][] = [["/#tools", "ツール一覧"], ["#guide", "OGPの基本"], ["#faq", "よくある質問"]];
 const FOOT: { h: string; items: [string, string][] }[] = [
   { h: "ツール", items: [...HUB.TOOLS.filter((t) => t.status === "live").map((t) => [t.name, "/" + t.slug + "/"] as [string, string]), ["ツール一覧", "/#tools"]] },
-  { h: "学ぶ", items: [["OGPの基本", "#guide"], ["OGPタグ辞典", "#glossary"], ["よくある質問", "#faq"]] },
+  { h: "学ぶ", items: [["こんなときに使えます", "#scenes"], ["OGPの基本", "#guide"], ["OGPタグ辞典", "#glossary"], ["よくある質問", "#faq"]] },
 ];
 
 const STEPS = [
@@ -36,9 +37,45 @@ const STEPS = [
 ];
 const GUIDE = D.GUIDE.filter((_, i) => [0, 2].includes(i));
 
-/* 関連ツール：公開中を先に、同じカテゴリ（Web制作・SEO）から5つ。公開中がまだ無いうちは「これから公開」として出す */
-const related = HUB.TOOLS.filter((t) => t.slug !== "ogp" && t.cat === "web")
-  .sort((a, b) => (a.status === "live" ? -1 : 1) - (b.status === "live" ? -1 : 1)).slice(0, 5);
+const SCENES = {
+  intro: "OGPは、設定を忘れていても自分のサイトを見ているだけでは気づきにくいところです。SNSやチャットにURLを貼ってから「画像が出ない」「別のページのタイトルになっている」と分かる前に、まとめて確かめられます。",
+  groups: [
+    {
+      h: "サイトの公開・リニューアル",
+      items: [
+        ["サイトを公開した直後に、トップや主要ページのシェア表示を見ておきたい", "URLを入れるだけで、6つのサービスでの見え方を並べて確認できます。"],
+        ["リニューアルのあと、古いOGP画像やタイトルが残っていないか心配", "og:url や canonical（正規URLの指定）が古いURLのままになっていないかも読み取ります。"],
+        ["クライアントへの納品前に、metaタグの設定漏れを点検したい", "足りないタグは「直すところ」に、「必ず直す／直すと良い／余裕があれば」の順で並びます。"],
+        ["Next.js や Astro など、使っている仕組みに合わせた書き方が知りたい", "HTML・Next.js・Nuxt・Astro などの書き方でコードを出すので、コピーして貼り付けられます。"],
+      ],
+    },
+    {
+      h: "SNSで告知・共有する前",
+      items: [
+        ["キャンペーンページをXで告知する前に、カードの見え方を確かめたい", "画像が大きく出る設定（summary_large_image）になっているかも分かります。"],
+        ["お知らせのページをFacebookでシェアしたら、画像が出なかった", "og:image が相対パス（https:// から始まらない書き方）になっているなど、よくある原因を指摘します。"],
+        ["LINEで案内を送る前に、リンクのプレビューを見ておきたい", "LINEのトーク画面に近い見た目で、タイトルと画像の出方をプレビューします。"],
+        ["SlackやTeamsで社内に共有するページの表示を整えたい", "チャットツールでの見え方も、SNSと一緒に確認できます。"],
+      ],
+    },
+    {
+      h: "ふだんのサイト運用",
+      items: [
+        ["ブログ記事ごとに、OGP画像を設定し忘れていないか確かめたい", "記事のURLを入れて、画像とタイトルが記事ごとに変わっているかを見られます。"],
+        ["参考にしたいサイトが、どんなOGPを設定しているか見てみたい", "公開されているページなら、どのURLでも読み取れます。"],
+        ["設定を直したのに、SNSでは古い表示のまま変わらない", "ここで新しい設定が読めていれば、原因はSNS側のキャッシュ（一時保存）です。対処はよくある質問にまとめています。"],
+      ],
+    },
+  ],
+};
+
+/* 関連ツール：hub.js の rel に書いた公開中のツール → 同じカテゴリ（Web制作・SEO）の公開中 → 準備中 の順に5つ。公開中が無いうちは「これから公開」として出す */
+const rel = HUB.TOOLS.find((t) => t.slug === "ogp")?.rel ?? [];
+const related = [
+  ...rel.map((s) => HUB.TOOLS.find((t) => t.slug === s && t.status === "live")).filter((t) => !!t),
+  ...HUB.TOOLS.filter((t) => t.slug !== "ogp" && t.cat === "web" && !rel.includes(t.slug))
+    .sort((a, b) => (a.status === "live" ? -1 : 1) - (b.status === "live" ? -1 : 1)),
+].slice(0, 5);
 const relatedLive = related.some((t) => t.status === "live");
 const LOG = HUB.CHANGELOG.filter((u) => u.tool === "ogp");
 
@@ -51,7 +88,7 @@ const ABOUT = [
 ];
 ---
 <Base
-  title="OGPチェッカー｜SNSのシェア表示を無料で確認｜insemble tools"
+  title="OGPチェッカー｜X・LINE・Facebookでのシェア表示を無料で確認｜insemble tools"
   description={description}
   path="/ogp/"
   ogTitle="OGPチェッカー｜シェアする前に、見え方をたしかめよう"
@@ -94,7 +131,7 @@ const ABOUT = [
       <section class="hero tz-hero" id="hero">
         <div class="hero-glow"></div>
         <div class="wrap hero-in">
-          <h1 class="badge"><Icon name="sparkle" size={14} />OGPチェッカー｜無料のOGP確認ツール</h1>
+          <h1 class="badge"><Icon name="sparkle" size={14} />OGPチェッカー｜SNSのシェア表示とmetaタグを確認する無料ツール</h1>
           <p class="hero-title">シェアする前に、<span class="hl">見え方</span>をたしかめよう。</p>
           <p class="tz-sub">X・LINE・Slackなど6つのサービスでの表示を確認して、足りないタグのコードまで出します。</p>
 
@@ -147,7 +184,7 @@ const ABOUT = [
             <h2 class="read-t">OGPのこと、ゆっくり知りたい方に</h2>
           </div>
           <nav class="read-toc" aria-label="このセクションの目次">
-            {[["#howto", "使い方"], ["#guide", "OGPの基本"], ["#glossary", "OGPタグ辞典"], ["#faq", "よくある質問"]].map(([h, l]) => <a href={h}>{l}</a>)}
+            {[["#howto", "使い方"], ["#scenes", "こんなときに"], ["#guide", "OGPの基本"], ["#glossary", "OGPタグ辞典"], ["#faq", "よくある質問"]].map(([h, l]) => <a href={h}>{l}</a>)}
           </nav>
         </div>
       </div>
@@ -163,6 +200,8 @@ const ABOUT = [
           ))}
         </div>
       </section>
+
+      <Scenes intro={SCENES.intro} groups={SCENES.groups} />
 
       <section class="wrap sec">
         <SectionHead id="guide" kicker="要点だけ" title="OGPの基本" sub="まずはここだけ読めば大丈夫です。" />
@@ -199,7 +238,7 @@ const ABOUT = [
 
       <section class="wrap sec sec-tight">
         <SectionHead id="tools" kicker="関連ツール" {...(relatedLive
-          ? { title: "あわせて使えるツール", sub: "公開前のチェックに、いっしょに使える無料ツールです。" }
+          ? { title: "あわせて使えるツール", sub: "支給されたPDFから画像や原稿を取り出すときはPDFばらし屋で。Web制作の公開前チェックに役立つツールも準備しています。" }
           : { title: "これから公開するツール", sub: "公開前のチェックに役立つツールを準備しています。" })} />
         <div class="tools">
           {related.map((t) => {

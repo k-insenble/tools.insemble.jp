@@ -72,13 +72,13 @@ public/
 scripts/copy-pdfjs.mjs  pdf.js の付属データを public/pdfjs/ へ（predev / prebuild）
 src/
   layouts/Base.astro   <head>（title/description/OGP/canonical/JSON-LD/フォント）
-  layouts/ToolPage.astro 端末内ツールの共通の枠（道具ゾーン／使い方／FAQ／関連ツール／概要／運営会社・JSON-LD）
+  layouts/ToolPage.astro 端末内ツールの共通の枠（道具ゾーン／使い方／こんなときに使えます／FAQ／関連ツール／概要／運営会社・JSON-LD）
   pages/index.astro    ツールハブ
   pages/ogp/index.astro OGPチェッカー
   pages/{pdf-extract,seat,schedule-excel,roulette,group}/index.astro  端末内のツール（ToolPage を使う）
   pages/404.astro
   components/
-    Header / Footer / Corp / SectionHead / Icon / Faq .astro   共通の部品
+    Header / Footer / Corp / SectionHead / Icon / Faq / Scenes .astro   共通の部品（Scenes＝こんなときに使えます）
     ogp/Glossary.astro   用語集（本文は最初から HTML に出す）
     tools/NamesField / Stepper .astro   名前の欄（1行1人）・−／＋の数字欄
   scripts/
