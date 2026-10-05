@@ -1,0 +1,29 @@
+---
+/* こんなときに使えます：ツールが必要になる場面を「誰が・どこで困っているか」で並べる
+   キーワードの羅列にしない。1項目＝困っている場面（t）＋このツールでどう片づくか（d）
+   ToolPage（端末内ツール）と OGPチェッカーで使う。見た目は ogp.css の .scenes */
+import SectionHead from "./SectionHead.astro";
+
+export interface SceneGroup {
+  h: string;                 // 場面のまとまり（例：飲み会・宴会の幹事）
+  items: [t: string, d: string][];
+}
+interface Props {
+  intro: string;             // どんな「ちょっと面倒」を片づけるツールか（2文くらい）
+  groups: SceneGroup[];
+}
+const { intro, groups } = Astro.props;
+---
+<section class="wrap sec">
+  <SectionHead id="scenes" kicker="利用シーン" title="こんなときに使えます" sub={intro} />
+  <div class="scenes">
+    {groups.map((g) => (
+      <section class="sc-g reveal">
+        <h3 class="sc-h">{g.h}</h3>
+        <ul class="sc-list">
+          {g.items.map(([t, d]) => <li><p class="sc-t">{t}</p><p class="sc-d">{d}</p></li>)}
+        </ul>
+      </section>
+    ))}
+  </div>
+</section>

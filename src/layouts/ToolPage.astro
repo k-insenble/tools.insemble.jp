@@ -1,7 +1,7 @@
 ---
 /* 端末内で動くツールページの共通の枠（PDFばらし屋・席順メーカーなど）
    OGPチェッカーと同じ2層：上＝道具ゾーン（paper。説明は足さない）／下＝読みもの（白）
-   ツール本体は <slot />。読みものの追加は <slot name="guide" />（使い方とよくある質問のあいだ） */
+   ツール本体は <slot />。読みもの：使い方 → こんなときに使えます（scenes）→ <slot name="guide" /> → よくある質問 → 関連ツール */
 import Base from "./Base.astro";
 import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
@@ -9,6 +9,7 @@ import Corp from "../components/Corp.astro";
 import Icon from "../components/Icon.astro";
 import SectionHead from "../components/SectionHead.astro";
 import Faq from "../components/Faq.astro";
+import Scenes, { type SceneGroup } from "../components/Scenes.astro";
 import HUB from "../data/hub.js";
 import { ORG, PUBLISHER } from "../data/org.js";
 import "../styles/ogp.css";
@@ -24,13 +25,15 @@ interface Props {
   sub: string;
   meta: [icon: string, text: string][]; // パンくず横の「端末内で処理」など
   steps: { t: string; d: string }[];
+  scenes: { intro: string; groups: SceneGroup[] }; // こんなときに使えます（利用シーン）
   faq: { q: string; a: string }[];
   about: [string, string][];
   corp: string;             // 下の「運営会社」に出す、このツールに合わせた一言
+  relatedSub?: string;      // 関連ツールの見出しの下に出す、つなぎの一言（例：席が決まったら、順番はルーレットで）
   appCategory?: string;     // schema.org の applicationCategory
   updated: string;          // 最終更新日 YYYY-MM-DD
 }
-const { slug, title, description, ogTitle, h1, lead, sub, meta, steps, faq, about, corp, appCategory = "UtilitiesApplication", updated } = Astro.props;
+const { slug, title, description, ogTitle, h1, lead, sub, meta, steps, scenes, faq, about, corp, relatedSub, appCategory = "UtilitiesApplication", updated } = Astro.props;
 
 /* 概要の最後には、どのツールでも同じ「料金」「免責」を付ける（書き方は規約 /terms/ にそろえる） */
 const aboutRows: [string, string][] = [
@@ -56,12 +59,13 @@ const jsonLd = [
 const NAV: [string, string][] = [["/#tools", "ツール一覧"], ["#howto", "使い方"], ["#faq", "よくある質問"]];
 const FOOT: { h: string; items: [string, string][] }[] = [
   { h: "ツール", items: [...live.map((t) => [t.name, "/" + t.slug + "/"] as [string, string]), ["ツール一覧", "/#tools"]] },
-  { h: "このページ", items: [["使い方", "#howto"], ["よくある質問", "#faq"], ["関連ツール", "#related"]] },
+  { h: "このページ", items: [["使い方", "#howto"], ["こんなときに使えます", "#scenes"], ["よくある質問", "#faq"], ["関連ツール", "#related"]] },
 ];
 
-/* 関連ツール：同じカテゴリの公開中 → ほかの公開中 の順に4つ */
-const related = live.filter((t) => t.slug !== slug)
-  .sort((a, b) => Number(b.cat === tool?.cat) - Number(a.cat === tool?.cat)).slice(0, 4);
+/* 関連ツール：hub.js の rel に書いた順 → 同じカテゴリの公開中 → ほかの公開中 の順に4つ */
+const rel = tool?.rel ?? [];
+const rank = (t: (typeof live)[number]) => (rel.includes(t.slug) ? rel.indexOf(t.slug) : rel.length + Number(t.cat !== tool?.cat));
+const related = live.filter((t) => t.slug !== slug).sort((a, b) => rank(a) - rank(b)).slice(0, 4);
 ---
 <Base title={title} description={description} path={path} ogTitle={ogTitle} ogImage={new URL(`/og/${slug}.png`, Astro.site).href} jsonLd={jsonLd}>
   <Header nav={NAV} />
@@ -106,7 +110,7 @@ const related = live.filter((t) => t.slug !== slug)
             <h2 class="read-t">{name}の使い方</h2>
           </div>
           <nav class="read-toc" aria-label="このセクションの目次">
-            {[["#howto", "使い方"], ["#faq", "よくある質問"], ["#related", "関連ツール"]].map(([h, l]) => <a href={h}>{l}</a>)}
+            {[["#howto", "使い方"], ["#scenes", "こんなときに"], ["#faq", "よくある質問"], ["#related", "関連ツール"]].map(([h, l]) => <a href={h}>{l}</a>)}
           </nav>
         </div>
       </div>
@@ -123,6 +127,8 @@ const related = live.filter((t) => t.slug !== slug)
         </div>
       </section>
 
+      <Scenes intro={scenes.intro} groups={scenes.groups} />
+
       <slot name="guide" />
 
       <section class="wrap sec">
@@ -131,7 +137,7 @@ const related = live.filter((t) => t.slug !== slug)
       </section>
 
       <section class="wrap sec sec-tight">
-        <SectionHead id="related" kicker="関連ツール" title="あわせて使えるツール" sub="どれも無料・登録不要で、ブラウザだけで使えます。" />
+        <SectionHead id="related" kicker="関連ツール" title="あわせて使えるツール" sub={(relatedSub ?? "") + "どれも無料・登録不要で、ブラウザだけで使えます。"} />
         <div class="tools">
           {related.map((t) => (
             <a class="t-row reveal" href={"/" + t.slug + "/"}>
