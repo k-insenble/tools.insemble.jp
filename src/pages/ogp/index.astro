@@ -81,7 +81,7 @@ const LOG = HUB.CHANGELOG.filter((u) => u.tool === "ogp");
 
 const ABOUT: [string, string, boolean?][] = [
   ["しくみ", "入力されたURLのページを運営者のサーバーから読みに行き、<head> の中の OGP・Twitterカード・canonical を読み取って採点します。"],
-  ["保存", "入力したURLと結果は保存しません。最近チェックしたURLは、お使いのブラウザ内にだけ残ります。"],
+  ["保存", "入力したURLとチェック結果は、運営者のサーバーに保存しません。最近チェックしたURLは、お使いのブラウザの中にだけ残ります。"],
   ["対応サービス", "X・Facebook・LINE・Slack・Discord・Microsoft Teams"],
   ["料金", "無料で、登録も要りません。PC・スマホのどちらでも使えます。"],
   ["免責", "結果の正確さは保証しません。このツールを使って生じた損害について、当社に故意または重大な過失がある場合を除き、責任を負いません。", true],
@@ -123,7 +123,7 @@ const ABOUT: [string, string, boolean?][] = [
         </nav>
         <div class="tmeta">
           <span><Icon name="link" size={13} />URLを取得して確認</span>
-          <span><Icon name="check" size={13} />入力内容は保存しません</span>
+          <span><Icon name="check" size={13} />サーバーに保存しません</span>
           <span>最終更新 <time datetime={D.UPDATED}>{D.UPDATED.replace(/-/g, "/")}</time></span>
         </div>
       </div>

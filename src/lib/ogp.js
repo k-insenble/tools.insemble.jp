@@ -88,9 +88,11 @@ export function analyze(j) {
     { key: "canonical", value: canonical || "未設定", state: st(canonical, "warn") },
   ];
 
-  const score = Math.max(0, Math.min(100, 100 - penalty));
+  // 「必ず直す」（err）が1つでも残っているうちは、80点未満（要確認）にとどめる。「優秀」と「必ず直す」が同時に出ないように
+  const mustFix = issues.some((i) => i.level === "err");
+  const score = Math.max(0, Math.min(mustFix ? 79 : 100, 100 - penalty));
   const status = score >= 90 ? "優秀" : score >= 80 ? "良好" : score >= 50 ? "要確認" : "要改善";
-  const statusNote = score >= 90 ? "OGPタグはほぼ整っています" : score >= 80 ? "あと少しで整います" : score >= 50 ? "いくつか直すところがあります" : "主要なOGPタグが足りていません";
+  const statusNote = !issues.length ? "OGPタグは過不足なく整っています" : score >= 90 ? "OGPタグはほぼ整っています" : score >= 80 ? "あと少しで整います" : score >= 50 ? (mustFix ? "必ず直すところがあります" : "いくつか直すところがあります") : "主要なOGPタグが足りていません";
 
   return {
     url: pageUrl,

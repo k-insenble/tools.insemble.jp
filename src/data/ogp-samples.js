@@ -6,7 +6,7 @@ const SAMPLES = {
   "https://github.com": {
     url: "https://github.com",
     score: 90,
-    status: "良好",
+    status: "優秀",
     statusNote: "OGPタグはほぼ整っています",
     siteName: "GitHub",
     previewTitle: "GitHub · 常に進化し続けます。GitHubが、あなたをその先へ導く。",
