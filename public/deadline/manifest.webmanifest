@@ -9,10 +9,60 @@
   "display": "standalone",
   "background_color": "#F4F7F7",
   "theme_color": "#F4F7F7",
-  "categories": ["productivity", "business"],
+  "categories": [
+    "productivity",
+    "business"
+  ],
   "icons": [
-    { "src": "/deadline/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/deadline/icon-512.png", "sizes": "512x512", "type": "image/png" },
-    { "src": "/deadline/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "/deadline/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/deadline/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/deadline/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "launch_handler": {
+    "client_mode": [
+      "focus-existing",
+      "auto"
+    ]
+  },
+  "shortcuts": [
+    {
+      "name": "締切を追加",
+      "short_name": "締切を追加",
+      "description": "締切の入力欄を開きます",
+      "url": "/deadline/?do=add",
+      "icons": [
+        {
+          "src": "/deadline/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "今日やることを書く",
+      "short_name": "今日やること",
+      "description": "今日やることの入力欄を開きます",
+      "url": "/deadline/?do=today",
+      "icons": [
+        {
+          "src": "/deadline/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
   ]
 }

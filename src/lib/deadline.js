@@ -222,7 +222,10 @@ export function normalize(raw, now) {
     };
   }).filter(Boolean);
   const ui = src.ui && typeof src.ui === "object" ? src.ui : src; // 試作版は ui を分けずに持っていた
-  return { version: VERSION, tasks, deadlines, ui: { mini: !!ui.mini, todayOpen: !!ui.todayOpen, backupAsked: !!ui.backupAsked } };
+  // win：アプリとして置いたときの、ミニにする前のウィンドウの大きさ
+  const okSize = (v) => Number.isFinite(v) && v >= 200 && v <= 8000;
+  const win = ui.win && okSize(ui.win.w) && okSize(ui.win.h) ? { w: Math.round(ui.win.w), h: Math.round(ui.win.h) } : null;
+  return { version: VERSION, tasks, deadlines, ui: { mini: !!ui.mini, todayOpen: !!ui.todayOpen, backupAsked: !!ui.backupAsked, win } };
 }
 
 /** 片づけ：前の日までに完了した「今日やること」と、30日より前に完了した締切を消す */

@@ -18,7 +18,7 @@ function init() {
   const el = {
     clock: $("#an-clock"), install: $("#an-install"), miniBtn: $("#an-mini-btn"),
     nwrap: $("#an-nwrap"), notice: $("#an-notice"), nmsg: $("#an-nmsg"), nsub: $("#an-nsub"), later: $("#an-later"), live: $("#an-live"),
-    mini: $("#an-mini"), mlist: $("#an-mlist"), mempty: $("#an-mempty"), mcount: $("#an-mcount"), mnext: $("#an-mnext"),
+    mini: $("#an-mini"), mtoday: $(".an-mtoday"), mlist: $("#an-mlist"), mempty: $("#an-mempty"), mcount: $("#an-mcount"), mnext: $("#an-mnext"),
     full: $("#an-full"), dlN: $("#an-dl-n"), open: $("#an-open"), samples: $("#an-samples"), clearSamples: $("#an-clear-samples"),
     backup: $("#an-backup"), backupT: $("#an-backup-t"), backupNo: $("#an-backup-no"), backupYes: $("#an-backup-yes"),
     composer: $("#an-composer"), cmodeT: $("#an-cmode-t"), mode: $("#an-mode"), one: $("#an-one"), bulk: $("#an-bulk"),
@@ -339,7 +339,7 @@ function init() {
     el.submit.setAttribute("aria-disabled", String(!ok));
   }
   function openComposer() {
-    if (data.ui.mini) { data.ui.mini = false; persist(); renderChrome(); }
+    if (data.ui.mini) setMini(false);
     ui.composer = true; ui.mode = "one"; ui.dDate = ymd(sod(Date.now()) + DAY + 2 * HOUR); ui.dTime = "23:59";
     el.title.value = ""; el.title.removeAttribute("aria-invalid"); el.bulkIn.value = "";
     renderComposer(); renderDeadlines();
@@ -487,7 +487,29 @@ function init() {
     el.todayBtn.setAttribute("aria-expanded", String(data.ui.todayOpen));
     el.tbody.hidden = !data.ui.todayOpen;
   }
-  el.miniBtn.addEventListener("click", () => { data.ui.mini = !data.ui.mini; persist(); renderChrome(); });
+  el.miniBtn.addEventListener("click", () => setMini(!data.ui.mini));
+  /* アプリとして置いたとき：ミニにするとウィンドウを計器の大きさまで縮め、戻すと元の大きさに戻す
+     （大きさは data.ui.win に保存。ブラウザのタブで開いているときは、ウィンドウには触らない） */
+  function setMini(on) {
+    if (on && !data.ui.mini && standalone()) data.ui.win = { w: window.outerWidth, h: window.outerHeight };
+    data.ui.mini = on; persist(); renderChrome();
+    requestAnimationFrame(fitWindow);
+  }
+  function fitWindow() {
+    if (!standalone() || typeof window.resizeTo !== "function") return;
+    try {
+      if (data.ui.mini) {
+        const frameW = Math.max(0, window.outerWidth - window.innerWidth), frameH = Math.max(0, window.outerHeight - window.innerHeight);
+        // ミニの欄は画面いっぱいに伸びるので、中身（いちばん下の「今日」の行）までの高さで測る
+        const ft = root.querySelector(".an-ft");
+        const h = el.mtoday.getBoundingClientRect().bottom - root.getBoundingClientRect().top + 8 + (ft?.offsetHeight || 0);
+        window.resizeTo(320 + frameW, Math.ceil(Math.min(h + frameH + 8, screen.availHeight)));
+      } else {
+        const w = data.ui.win || { w: 440, h: 780 }; // デザインの基本サイズ（420×720）＋ウィンドウの枠
+        window.resizeTo(w.w, w.h);
+      }
+    } catch (e) {} // 大きさを変えられないブラウザでは何もしない
+  }
   function renderStoreNote() {
     setText(el.store, canStore ? "データはこのブラウザの中だけに保存されます" : "このブラウザでは保存できないため、ページを閉じると消えます");
   }
@@ -518,8 +540,7 @@ function init() {
     if (e.key === "n" || e.key === "N") { e.preventDefault(); openComposer(); }
     if (e.key === "t" || e.key === "T") {
       e.preventDefault();
-      data.ui.mini = false; data.ui.todayOpen = true; persist(); renderChrome();
-      el.task.focus();
+      openToday();
     }
   });
 
@@ -543,9 +564,33 @@ function init() {
     navigator.serviceWorker.register("/deadline/sw.js", { scope: "/deadline/" }).catch(() => {});
   }
 
+  /* ---------- アイコンを右クリックしたときのショートカット（manifest の shortcuts：?do=add / ?do=today） ---------- */
+  function openToday() {
+    if (data.ui.mini) setMini(false);
+    data.ui.todayOpen = true; persist(); renderChrome();
+    el.task.focus({ preventScroll: true });
+    el.task.scrollIntoView?.({ block: "nearest" });
+  }
+  const runAction = (kind) => { if (kind === "add") openComposer(); else if (kind === "today") openToday(); };
+
   renderStoreNote();
   renderAll();
   renderClock(Date.now());
   root.classList.add("is-ready"); // ここで本体を見せる（CSS の .an:not(.is-ready)）
+
+  const firstUrl = location.href;
+  const action = new URLSearchParams(location.search).get("do");
+  if (action) { history.replaceState(null, "", location.pathname + location.hash); runAction(action); }
+  // すでに開いているウィンドウでショートカットを押したとき（manifest の launch_handler: focus-existing）
+  if ("launchQueue" in window) {
+    let first = true;
+    window.launchQueue.setConsumer((p) => {
+      const skip = first && p.targetURL === firstUrl; // 起動したときの URL は上で処理ずみ
+      first = false;
+      if (p.targetURL && !skip) runAction(new URL(p.targetURL).searchParams.get("do"));
+    });
+  }
+  // アプリとして初めて開いたとき（ミニから始まる）は、ウィンドウをミニの大きさに
+  if (!stored && data.ui.mini) requestAnimationFrame(fitWindow);
   setInterval(tick, 1000);
 }
