@@ -18,7 +18,7 @@ const HUB = (function () {
 
   /** @type {{ slug: string, name: string, desc: string, cat: string, icon: string, status: "live" | "soon", url?: boolean, hot?: number, uses?: number, added?: string, isNew?: boolean, kw?: string, rel?: string[] }[]} */
   const TOOLS = [
-    { slug: "ogp", name: "OGPチェッカー", desc: "URLを貼るだけでSNSでの見え方を採点・プレビュー。改善コードまで生成。", cat: "web", icon: "share", status: "live", url: true, hot: 6, uses: 12480, added: "2026-06-12", kw: "sns シェア x twitter facebook line メタタグ seo ogp画像 ogp確認 公開前 リニューアル", rel: ["pdf-extract"] },
+    { slug: "ogp", name: "OGPチェッカー", desc: "URLを貼るだけでSNSでの見え方を採点・プレビュー。改善コードまで生成。", cat: "web", icon: "share", status: "live", url: true, hot: 7, uses: 12480, added: "2026-06-12", kw: "sns シェア x twitter facebook line メタタグ seo ogp画像 ogp確認 公開前 リニューアル", rel: ["pdf-extract"] },
     { slug: "noindex", name: "NoIndexチェッカー", desc: "検索結果に出る設定かを確認。noindexの付け忘れ・付けすぎを防ぐ。", cat: "web", icon: "shield", status: "soon", url: true, uses: 3160, added: "2026-09-18" },
     { slug: "meta-tags", name: "メタタグ一括取得", desc: "title・description・OGP・canonicalをまとめて取得して一覧表示。", cat: "web", icon: "tags", status: "soon", url: true },
     { slug: "canonical", name: "canonicalチェッカー", desc: "正規URLの指定を確認し、重複コンテンツのリスクを洗い出す。", cat: "web", icon: "link2", status: "soon", url: true },
@@ -30,20 +30,20 @@ const HUB = (function () {
     { slug: "share-link", name: "シェアリンク生成", desc: "X・LINE・Facebookのシェア用URLを、文言込みで組み立てる。", cat: "web", icon: "send", status: "soon" },
     { slug: "qr", name: "QRコード生成", desc: "URLからQRを生成。サイズ・余白・色を調整して書き出し。", cat: "web", icon: "qr", status: "soon" },
 
-    { slug: "pdf-extract", name: "PDFばらし屋", desc: "PDFから文字・画像・ページ画像をまとめて取り出す。全部入りのZIPも1クリック。", cat: "file", icon: "pdf", status: "live", hot: 4, added: "2026-09-30", isNew: true, kw: "pdf テキスト 抽出 画像 変換 png jpeg zip 文字起こし カタログ パンフレット 素材", rel: ["schedule-excel", "ogp"] },
+    { slug: "pdf-extract", name: "PDFばらし屋", desc: "PDFから文字・画像・ページ画像をまとめて取り出す。全部入りのZIPも1クリック。", cat: "file", icon: "pdf", status: "live", hot: 5, added: "2026-09-30", isNew: true, kw: "pdf テキスト 抽出 画像 変換 png jpeg zip 文字起こし カタログ パンフレット 素材", rel: ["schedule-excel", "ogp"] },
     { slug: "resize", name: "画像リサイズ", desc: "指定サイズへ一括変換。比率を保ったまま複数枚まとめて。", cat: "file", icon: "image", status: "soon" },
     { slug: "compress", name: "画像圧縮", desc: "見た目を保ったままファイルサイズを削減。表示速度の改善に。", cat: "file", icon: "zip", status: "soon" },
     { slug: "webp", name: "WebP変換", desc: "PNG・JPEGをWebPへ。逆方向の変換にも対応。", cat: "file", icon: "swap", status: "soon" },
     { slug: "favicon", name: "favicon生成", desc: "1枚の画像から各サイズのfaviconとマニフェストを書き出し。", cat: "file", icon: "star", status: "soon" },
     { slug: "base64", name: "Base64変換", desc: "文字列・ファイルのエンコードとデコードを双方向で。", cat: "file", icon: "code", status: "soon" },
 
-    { slug: "seat", name: "席順メーカー", desc: "参加者を入れるだけで、卓ごとの座席表ができる。画像保存・コピーもそのまま。", cat: "decide", icon: "seat", status: "live", hot: 1, added: "2026-09-30", isNew: true, kw: "席替え 席決め 飲み会 宴会 懇親会 忘年会 新年会 歓迎会 送別会 座席表 テーブル 幹事", rel: ["group", "roulette"] },
-    { slug: "roulette", name: "イベント用ルーレット", desc: "名前を入れて回すだけ。当たった人は外して、順番決めや抽選をテンポよく。", cat: "decide", icon: "wheel", status: "live", hot: 2, added: "2026-09-30", isNew: true, kw: "抽選 くじ 順番 当番 発表者 司会 景品 ランダム ビンゴ 忘年会 役員決め", rel: ["seat", "group"] },
-    { slug: "group", name: "グループ分けメーカー", desc: "人数を決めて押すだけで、均等なチームに。リーダーの固定や、一緒にしない組み合わせも指定できる。", cat: "decide", icon: "users", status: "live", hot: 3, added: "2026-09-30", isNew: true, kw: "チーム分け 班分け 研修 ワークショップ 学校 ランダム 組み分け グループディスカッション gd 面接官 ファシリテーター リーダー 男女 グループワーク 新人研修", rel: ["seat", "roulette"] },
+    { slug: "seat", name: "席順メーカー", desc: "参加者を入れるだけで、卓ごとの座席表ができる。画像保存・コピーもそのまま。", cat: "decide", icon: "seat", status: "live", hot: 2, added: "2026-09-30", isNew: true, kw: "席替え 席決め 飲み会 宴会 懇親会 忘年会 新年会 歓迎会 送別会 座席表 テーブル 幹事", rel: ["group", "roulette"] },
+    { slug: "roulette", name: "イベント用ルーレット", desc: "名前を入れて回すだけ。当たった人は外して、順番決めや抽選をテンポよく。", cat: "decide", icon: "wheel", status: "live", hot: 3, added: "2026-09-30", isNew: true, kw: "抽選 くじ 順番 当番 発表者 司会 景品 ランダム ビンゴ 忘年会 役員決め", rel: ["seat", "group"] },
+    { slug: "group", name: "グループ分けメーカー", desc: "人数を決めて押すだけで、均等なチームに。リーダーの固定や、一緒にしない組み合わせも指定できる。", cat: "decide", icon: "users", status: "live", hot: 4, added: "2026-09-30", isNew: true, kw: "チーム分け 班分け 研修 ワークショップ 学校 ランダム 組み分け グループディスカッション gd 面接官 ファシリテーター リーダー 男女 グループワーク 新人研修", rel: ["seat", "roulette"] },
 
-    { slug: "schedule-excel", name: "スケジュール→Excelメーカー", desc: "予定をWebで入れるだけで、そのまま配れるExcelに。進行表・担当別の形も。", cat: "office", icon: "sheet", status: "live", hot: 5, added: "2026-09-30", isNew: true, kw: "エクセル xlsx csv 予定表 進行表 タイムテーブル 工程表 スケジュール表 日程表 研修 撮影 イベント", rel: ["pdf-extract"] },
+    { slug: "schedule-excel", name: "スケジュール→Excelメーカー", desc: "予定をWebで入れるだけで、そのまま配れるExcelに。進行表・担当別の形も。", cat: "office", icon: "sheet", status: "live", hot: 6, added: "2026-09-30", isNew: true, kw: "エクセル xlsx csv 予定表 進行表 タイムテーブル 工程表 スケジュール表 日程表 研修 撮影 イベント", rel: ["pdf-extract"] },
 
-    { slug: "deadline", name: "あと何日？", desc: "締切を入れるだけで、残り時間が日→時間→分へ自動で変わる付箋。今日やることのチェックも。", cat: "office", icon: "timer", status: "live", hot: 7, added: "2026-10-08", isNew: true, kw: "締切 期限 カウントダウン 残り日数 残り時間 タイマー todo やること リマインダー 付箋 notion excel アプリ pwa", rel: ["schedule-excel"] },
+    { slug: "deadline", name: "あと何日？", desc: "締切を入れるだけで、残り時間が日→時間→分へ自動で変わる付箋。今日やることのチェックも。", cat: "office", icon: "timer", status: "live", hot: 1, added: "2026-10-08", isNew: true, kw: "締切 期限 カウントダウン 残り日数 残り時間 タイマー todo やること リマインダー 付箋 notion excel アプリ pwa", rel: ["schedule-excel"] },
 
     { slug: "count", name: "文字数カウント", desc: "タイトル・ディスクリプションの文字数を推奨範囲つきで判定。", cat: "other", icon: "hash", status: "soon" },
     { slug: "zen-han", name: "全角・半角変換", desc: "英数字・カナ・記号を一括変換。原稿の表記ゆれを揃える。", cat: "other", icon: "type", status: "soon" },
