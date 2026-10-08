@@ -83,7 +83,8 @@ const FOOT: { h: string; items: [string, string][] }[] = [
       <!-- ===== いま使えるツール（ここが主役） ===== -->
       <section class="feat" aria-labelledby="live-h">
         <div class="feat-head">
-          <h2 class="feat-k" id="live-h">いま使えるツール<span class="feat-n" id="live-n">{live.length}</span></h2>
+          <h2 class="feat-k" id="live-h">いま使えるツール</h2>
+          <span class="feat-n" id="live-n">{live.length}</span>
           <span class="feat-note">☆でお気に入りに追加できます</span>
         </div>
         <div class="feat-rows" id="live-list">
@@ -114,11 +115,11 @@ const FOOT: { h: string; items: [string, string][] }[] = [
     <section class="band" id="catalog" style="scroll-margin-top:64px">
       <div class="wrap sec sec-tight">
         <details class="soon-box" id="soon-box">
+          <!-- 見出し（h2）と件数は分けておく（件数が見出しの文字に混ざらないように）。並べ方は hub.css の .soon-box>summary -->
           <summary>
-            <span class="soon-main">
-              <span class="soon-t">これから公開するツール<span class="feat-n" id="soon-n">{soon.length}</span></span>
-              <span class="soon-d">準備ができたものから、順に公開します。</span>
-            </span>
+            <h2 class="soon-t">これから公開するツール</h2>
+            <span class="feat-n soon-n" id="soon-n">{soon.length}</span>
+            <span class="soon-d">準備ができたものから、順に公開します。</span>
             <Icon name="chevron" size={18} class="soon-chev" />
           </summary>
           {soonCats.map((c) => {
