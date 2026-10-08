@@ -10,9 +10,12 @@ interface Props {
   ogImage?: string;         // 絶対URL。未指定なら /og-image.png（共通。ツールページは /og/<slug>.png）
   jsonLd?: unknown;
   noindex?: boolean;        // 404 など検索に載せないページ。canonical は出さない
+  /* アプリとして置けるツール（PWA）だけ：サイト共通のマニフェスト・アイコンの代わりに使う */
+  app?: { manifest: string; icon: string; themeColor: string };
+  fonts?: string;           // このページだけで使う Google Fonts の URL（見出し用のフォントとは別に）
 }
 // ?url= 付きのURLは canonical で本体（path）にまとめる。noindex と併用すると本体まで外れるおそれがあるため使わない
-const { title, description, path, ogTitle, ogDescription, ogImage, jsonLd, noindex = false } = Astro.props;
+const { title, description, path, ogTitle, ogDescription, ogImage, jsonLd, noindex = false, app, fonts } = Astro.props;
 const canonical = new URL(path, Astro.site).href;
 const image = ogImage ?? new URL("/og-image.png", Astro.site).href;
 // 計測タグ（Google アナリティクス・Microsoft Clarity）。本番ビルドだけで読み込む（手元の開発では数えない）
@@ -41,14 +44,16 @@ const useTags = import.meta.env.PROD;
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png" />
     <link rel="icon" href="/favicon-48.png" sizes="48x48" type="image/png" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <link rel="manifest" href="/site.webmanifest" />
-    <meta name="theme-color" content="#2e6a74" />
+    <link rel="apple-touch-icon" href={app?.icon ?? "/apple-touch-icon.png"} />
+    <link rel="manifest" href={app?.manifest ?? "/site.webmanifest"} />
+    <meta name="theme-color" content={app?.themeColor ?? "#2e6a74"} />
+    {app && <meta name="apple-mobile-web-app-capable" content="yes" />}
     <meta name="twitter:image" content={image} />
     <meta property="og:image:alt" content={ogTitle ?? title} />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@800&display=swap" rel="stylesheet" />
+    {fonts && <link href={fonts} rel="stylesheet" />}
     {jsonLd && <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />}
     {useTags && <script is:inline async src="https://www.googletagmanager.com/gtag/js?id=G-BE85334L8G"></script>}
     {useTags && <script is:inline>

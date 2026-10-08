@@ -22,11 +22,17 @@ ErrorDocument 404 /404.html
 # PDFばらし屋の pdf.js（worker は .mjs、画像の読み取りに .wasm を使う）。種類が合わないとブラウザが読み込まない
 AddType text/javascript .mjs
 AddType application/wasm .wasm
+# あと何日？をアプリとして置くための設定ファイル
+AddType application/manifest+json .webmanifest
 
 <IfModule mod_headers.c>
   # ファイル名にハッシュが付く Astro の出力は長期キャッシュ
   <If "%{REQUEST_URI} =~ m#^/_astro/#">
     Header set Cache-Control "public, max-age=31536000, immutable"
+  </If>
+  # あと何日？の Service Worker は、更新がすぐ届くようにキャッシュさせない
+  <If "%{REQUEST_URI} == '/deadline/sw.js'">
+    Header set Cache-Control "no-cache"
   </If>
   # pdf.js の付属データ（cmaps など）は中身がめったに変わらないので1週間
   <If "%{REQUEST_URI} =~ m#^/pdfjs/#">

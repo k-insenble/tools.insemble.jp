@@ -43,6 +43,8 @@ const HUB = (function () {
 
     { slug: "schedule-excel", name: "スケジュール→Excelメーカー", desc: "予定をWebで入れるだけで、そのまま配れるExcelに。進行表・担当別の形も。", cat: "office", icon: "sheet", status: "live", hot: 5, added: "2026-09-30", isNew: true, kw: "エクセル xlsx csv 予定表 進行表 タイムテーブル 工程表 スケジュール表 日程表 研修 撮影 イベント", rel: ["pdf-extract"] },
 
+    { slug: "deadline", name: "あと何日？", desc: "締切を入れるだけで、残り時間が日→時間→分へ自動で変わる付箋。今日やることのチェックも。", cat: "office", icon: "timer", status: "live", hot: 7, added: "2026-10-08", isNew: true, kw: "締切 期限 カウントダウン 残り日数 残り時間 タイマー todo やること リマインダー 付箋 notion excel アプリ pwa", rel: ["schedule-excel"] },
+
     { slug: "count", name: "文字数カウント", desc: "タイトル・ディスクリプションの文字数を推奨範囲つきで判定。", cat: "other", icon: "hash", status: "soon" },
     { slug: "zen-han", name: "全角・半角変換", desc: "英数字・カナ・記号を一括変換。原稿の表記ゆれを揃える。", cat: "other", icon: "type", status: "soon" },
     { slug: "whitespace", name: "改行・空白の整形", desc: "余分な改行や連続スペースを除去して、貼り付け原稿を整える。", cat: "other", icon: "eraser", status: "soon" },

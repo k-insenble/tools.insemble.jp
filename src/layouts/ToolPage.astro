@@ -32,8 +32,10 @@ interface Props {
   relatedSub?: string;      // 関連ツールの見出しの下に出す、つなぎの一言（例：席が決まったら、順番はルーレットで）
   appCategory?: string;     // schema.org の applicationCategory
   updated: string;          // 最終更新日 YYYY-MM-DD
+  app?: { manifest: string; icon: string; themeColor: string }; // アプリとして置けるツール（PWA）だけ
+  fonts?: string;           // このツールだけで使う Google Fonts の URL
 }
-const { slug, title, description, ogTitle, h1, lead, sub, meta, steps, scenes, faq, about, corp, relatedSub, appCategory = "UtilitiesApplication", updated } = Astro.props;
+const { slug, title, description, ogTitle, h1, lead, sub, meta, steps, scenes, faq, about, corp, relatedSub, appCategory = "UtilitiesApplication", updated, app, fonts } = Astro.props;
 
 /* 概要の最後には、どのツールでも同じ「料金」「免責」を付ける（書き方は規約 /terms/ にそろえる） */
 const aboutRows: [string, string][] = [
@@ -67,7 +69,7 @@ const rel = tool?.rel ?? [];
 const rank = (t: (typeof live)[number]) => (rel.includes(t.slug) ? rel.indexOf(t.slug) : rel.length + Number(t.cat !== tool?.cat));
 const related = live.filter((t) => t.slug !== slug).sort((a, b) => rank(a) - rank(b)).slice(0, 4);
 ---
-<Base title={title} description={description} path={path} ogTitle={ogTitle} ogImage={new URL(`/og/${slug}.png`, Astro.site).href} jsonLd={jsonLd}>
+<Base title={title} description={description} path={path} ogTitle={ogTitle} ogImage={new URL(`/og/${slug}.png`, Astro.site).href} jsonLd={jsonLd} app={app} fonts={fonts}>
   <Header nav={NAV} />
 
   <main>

@@ -1,0 +1,496 @@
+---
+/* あと何日？：締切までの残り時間が「日 → 時間 → 分」へ自動で変わる付箋。今日やることも一緒に
+   デザインの元データは Claude Design の「あと何日？」。動きは src/scripts/tools/deadline.js、計算は src/lib/deadline.js
+   アプリとして置ける（PWA）：public/deadline/manifest.webmanifest・sw.js。アプリで開いたときは、サイトの枠を隠してツールだけを出す */
+import ToolPage from "../../layouts/ToolPage.astro";
+
+const FAQ = [
+  { q: "入れた締切や「今日やること」は、どこかに送られますか？", a: "送られません。入れた内容は、お使いのブラウザの中（localStorage）にだけ保存します。運営者のサーバーにも、外部のサービスにも届きません。そのため、別のパソコンやスマホとは同期しません。" },
+  { q: "データが消えることはありますか？", a: "ブラウザの「閲覧履歴データの削除」などでサイトのデータを消すと、一緒に消えます。シークレットウィンドウでは、閉じると消えます。大事な締切は、ときどき「Excelに書き出す（バックアップにも）」で保存しておくと安心です。" },
+  { q: "日付だけを入れたとき、期限は何時になりますか？", a: "その日の23時59分59秒までとして計算します。「今日」「明日」のボタンや時刻のボタンで、12:00・18:00 など時刻を決めることもできます。時刻はお使いの端末の時計（タイムゾーン）に合わせています。" },
+  { q: "Notion・Excel・スプレッドシートの締切をまとめて入れられますか？", a: "できます。「締切を追加」→「Notion・Excelからまとめて貼り付け」を開き、1行に1件ずつ「タスク名」と「期限」を貼り付けてください。タブ（Excelやスプレッドシートからのコピー）、カンマ、2つ以上の空白のどれで区切っても読み取ります。期限は 2026-10-10・2026/10/10・10月10日 などの書き方が使えます。" },
+  { q: "登録した締切をNotionやExcelに持っていけますか？", a: "「コピーしてNotion・Excelに貼る」を押すと、「タスク名」と「期限」をタブで区切った一覧をコピーします。Notionの表やExcel・スプレッドシートにそのまま貼り付けられます。残り日数の関数を入れたファイルがほしいときは「Excelに書き出す」を使ってください。" },
+  { q: "パソコンに常に表示しておけますか？", a: "Chrome や Edge では、ヘッダーの「アプリとして置く」（またはアドレスバーのインストールのボタン）で、アプリとして開けます。画面の隅に置いて「ミニ」にすると、ウィンドウが締切1行ずつの小さな表示に縮みます（戻すと元の大きさに戻ります）。デスクトップやタスクバーのアイコンを右クリックすると「締切を追加」「今日やることを書く」から直接開けます。スマホでは、共有メニューの「ホーム画面に追加」から置けます。アプリにしたあとは、ネットにつながっていなくても使えます。" },
+  { q: "締切の時間になったら、通知は来ますか？", a: "通知や音は出しません。仕事の邪魔をしないように、画面の上の1行のお知らせ、カードの色、タブ名（「あと3時間 | あと何日？」のような、いちばん近い締切までの残り時間）で、静かに知らせる作りです。" },
+];
+
+const SCENES = {
+  intro: "ふつうの付箋は、自分で見に行って、自分で書き換えないと古くなります。期限を一度書いておけば、残り時間が「日 → 時間 → 分」へ勝手に細かくなり、色と言葉で知らせてくれる付箋です。",
+  groups: [
+    {
+      h: "Web制作・デザインの仕事",
+      items: [
+        ["公開日・納品日が重なって、どれから手をつけるか迷う", "締切は近い順に並び、いちばん近いものが大きく出ます。画面の上の1行で「いま一番あぶないもの」が分かります。"],
+        ["案件ごとの締切をNotionで管理しているが、毎回開くのが面倒", "Notionの表からコピーして「Notion・Excelからまとめて貼り付け」へ。画面の隅に置いておけば、開かずに残り時間が見られます。"],
+        ["見積書の提出が「今日の何時まで」かを、うっかり忘れそう", "時刻まで入れておけば、当日は「あと8時間12分」のように分単位で数えます。"],
+      ],
+    },
+    {
+      h: "事務・総務・営業",
+      items: [
+        ["請求書の送付や月末の締め作業を、カレンダーとは別にさっと確認したい", "いちばん近い締切までの残り時間がタブ名にも「あと2日」と出るので、別の作業中でも目に入ります。"],
+        ["今日やることを、紙の付箋に書いてはなくしてしまう", "「今日やること」に1行書いて Enter。終わったらチェックで線が引けて、翌朝には自動で片づきます。"],
+        ["締切の一覧をExcelで上司と共有したい", "「Excelに書き出す」で、残り日数と状態の関数が入ったファイルに。Excelで開くたびに数字が更新されます。"],
+        ["Excelで「今日から期限まで何日」を出す関数を、毎回調べている", "締切のカードの「Excelで計算」から、その日付入りの関数をワンクリックでコピーできます。"],
+      ],
+    },
+    {
+      h: "学校・個人の締切",
+      items: [
+        ["レポートや課題の提出日が、気づくと明日になっている", "3日前から琥珀色、24時間を切ると朱色、過ぎると濃い色に反転。色だけでなく「明日が期限」と言葉でも知らせます。"],
+        ["申し込みや支払いの期限を、スマホのホーム画面に置いておきたい", "ホーム画面に追加すれば、アプリのように開けて、ネットにつながっていなくても使えます。"],
+        ["登録やログインが必要なアプリは、使い始めるのが面倒", "登録はいりません。開いたらすぐ書けて、データはこのブラウザの中だけに残ります。"],
+      ],
+    },
+  ],
+};
+
+/* Claude Design のフォント（数字は Bricolage Grotesque、日本語は Zen Kaku Gothic New、関数は IBM Plex Mono） */
+const FONTS = "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600&family=IBM+Plex+Mono:wght@400&family=Zen+Kaku+Gothic+New:wght@400;700;900&display=swap";
+
+const LOGO = `<svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true"><rect x="1" y="1" width="20" height="20" rx="6" fill="#2E6A74"/><circle cx="11" cy="11" r="5.6" stroke="#F4F7F7" stroke-width="1.6"/><path d="M11 11V5.4A5.6 5.6 0 0 1 16.6 11Z" fill="#FF8A4C"/></svg>`;
+const PLUS = (s: number, w = 1.7) => `<svg width="${s}" height="${s}" viewBox="0 0 11 11" fill="none" aria-hidden="true"><path d="M5.5 1.5v8M1.5 5.5h8" stroke="currentColor" stroke-width="${w}" stroke-linecap="round"/></svg>`;
+---
+<ToolPage
+  slug="deadline"
+  title="締切までの残り時間を自動でカウントダウン｜あと何日？｜insemble tools"
+  description="締切を入れると、残り時間が「あと2日14時間」「あと42分」のように自動で細かくなる無料の付箋ツール。今日やることのチェック付き。Notion・Excelとの貼り付け・コピーに対応。登録不要で、データはブラウザの中だけに保存します。"
+  ogTitle="あと何日？｜更新しなくても、古くならない付箋"
+  h1="あと何日？｜締切までの残り時間を数える無料ツール"
+  lead={["更新しなくても、", "古くならない", "付箋。"]}
+  sub="期限を一度書けば、残り時間が「日 → 時間 → 分」へ自動で切り替わります。今日やることも、ここに。"
+  meta={[["check", "ブラウザ内に保存"], ["check", "送信しません"]]}
+  steps={[
+    { t: "締切を入れる", d: "「締切を追加」で名前と日付を。日付だけなら、その日の23:59までとして数えます。" },
+    { t: "あとは放っておく", d: "残り時間は自動で更新。3日前・24時間前・期限切れで、カードの色と言葉が変わります。" },
+    { t: "今日やることを消していく", d: "1行書いて Enter、終わったらチェック。完了したものは翌朝に片づきます。" },
+  ]}
+  scenes={SCENES}
+  faq={FAQ}
+  about={[
+    ["しくみ", "残り時間は、開くたび・1秒ごとに「期限 − いまの時刻」で計算し直します。ページを開きっぱなしでも、ずれません。"],
+    ["保存", "入れた内容は、お使いのブラウザの中（localStorage）にだけ保存します。運営者には届きません。ブラウザのデータを消すと、一緒に消えます。"],
+    ["アプリとして", "PWA（ホーム画面やデスクトップに置けるWebアプリ）に対応。置いたあとはオフラインでも使えます。アイコンの右クリックから「締切を追加」も開けます。"],
+  ]}
+  relatedSub="締切の多い日の進行表は、スケジュール→Excelメーカーで表にできます。"
+  corp="たとえば「チーム全員の締切を1つの画面にまとめて、近いものから知らせる」ような、社内向けの専用ツールもつくれます。"
+  appCategory="BusinessApplication"
+  updated="2026-10-08"
+  app={{ manifest: "/deadline/manifest.webmanifest", icon: "/deadline/apple-touch-icon.png", themeColor: "#F4F7F7" }}
+  fonts={FONTS}
+>
+  <div class="tp-panel an-panel">
+    <div class="an" id="an">
+      <div class="an-hd">
+        <span class="an-brand"><Fragment set:html={LOGO} />あと何日？</span>
+        <span class="an-clock" id="an-clock" aria-hidden="true"></span>
+        <button type="button" class="an-hbtn" id="an-install" hidden>アプリとして置く</button>
+        <button type="button" class="an-hbtn" id="an-mini-btn" aria-pressed="false" title="ミニ表示（ちらっと見る用）">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true"><rect x="1" y="2" width="11" height="3" rx="1.2" stroke="currentColor" stroke-width="1.3"/><rect x="1" y="8" width="11" height="3" rx="1.2" stroke="currentColor" stroke-width="1.3"/></svg>ミニ
+        </button>
+      </div>
+
+      <!-- お知らせ（常に1行・いちばん近い1件）。読み上げは状態が変わったときだけ（an-live） -->
+      <div class="an-nwrap" id="an-nwrap">
+        <div class="an-notice" id="an-notice" data-st="normal">
+          <span class="an-nic" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1.5a3.2 3.2 0 0 0-3.2 3.2v2.1L1.8 8.6h8.4l-1-1.8V4.7A3.2 3.2 0 0 0 6 1.5Z" fill="currentColor"/><path d="M4.7 9.8a1.4 1.4 0 0 0 2.6 0" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg></span>
+          <p class="an-ntx"><b id="an-nmsg"></b><span id="an-nsub"></span></p>
+          <button type="button" class="an-later" id="an-later" hidden>あとで</button>
+        </div>
+      </div>
+      <p class="sr-only" id="an-live" role="status" aria-live="polite"></p>
+
+      <!-- ミニ（常駐用の計器だけ） -->
+      <div class="an-mini" id="an-mini" hidden>
+        <ul class="an-mlist" id="an-mlist" aria-label="締切"></ul>
+        <p class="an-mempty" id="an-mempty" hidden>締切はありません</p>
+        <p class="an-mtoday"><b id="an-mcount"></b><span id="an-mnext"></span></p>
+      </div>
+
+      <div class="an-main" id="an-full">
+        <section class="an-dl" aria-labelledby="an-dl-h">
+          <div class="an-sh">
+            <h2 id="an-dl-h">締切</h2>
+            <span class="an-sn" id="an-dl-n"></span>
+            <button type="button" class="an-add" id="an-open" aria-keyshortcuts="N" title="ショートカット: N"><Fragment set:html={PLUS(11)} />締切を追加</button>
+          </div>
+
+          <p class="an-samples" id="an-samples" hidden>
+            <span>いま表示しているのはサンプルです。自分の予定を入れると自動で片付きます。</span>
+            <button type="button" id="an-clear-samples">今すぐ消す</button>
+          </p>
+
+          <div class="an-ask" id="an-backup" hidden>
+            <p><b id="an-backup-t"></b>データはこのブラウザの中だけにあるので、履歴の削除などで消えることがあります。一度書き出しておきますか？</p>
+            <div class="an-ask-a">
+              <button type="button" class="an-btn" id="an-backup-no">今はいい</button>
+              <button type="button" class="an-btn is-primary" id="an-backup-yes">書き出す</button>
+            </div>
+          </div>
+
+          <!-- 締切を追加（1件ずつ／まとめて貼り付け） -->
+          <div class="an-composer" id="an-composer" hidden>
+            <div class="an-ctop">
+              <span class="an-cmode" id="an-cmode-t">1件ずつ入れる</span>
+              <button type="button" class="an-link" id="an-mode" aria-controls="an-one an-bulk">Notion・Excelからまとめて貼り付け</button>
+            </div>
+            <div class="an-one" id="an-one">
+              <input class="an-tin-title" id="an-title" type="text" placeholder="何の締切？（例：サイト公開）" aria-label="締切の名前" maxlength="120" autocomplete="off" enterkeyhint="done" />
+              <fieldset class="an-fs">
+                <legend>日付</legend>
+                <div class="an-chips" id="an-dchips"></div>
+                <input class="an-pick" id="an-date" type="date" aria-label="日付を選ぶ" />
+              </fieldset>
+              <fieldset class="an-fs">
+                <legend>時刻</legend>
+                <div class="an-chips" id="an-tchips"></div>
+                <input class="an-pick" id="an-time" type="time" aria-label="時刻を選ぶ" />
+              </fieldset>
+              <p class="an-hint">期限日は23:59として計算（時刻を選ぶと変えられます）</p>
+            </div>
+            <div class="an-bulk" id="an-bulk" hidden>
+              <label class="an-blabel" for="an-bulk-in">1行に1件。「タスク名」と「期限」をタブかカンマで区切って貼り付けます。</label>
+              <pre class="an-eg" id="an-eg" aria-label="入力の例"></pre>
+              <textarea class="an-bta" id="an-bulk-in" rows="5" spellcheck="false" placeholder="ここに貼り付け"></textarea>
+              <p class="an-bres" id="an-bres" aria-live="polite"></p>
+            </div>
+            <div class="an-cfoot">
+              <div class="an-prev"><span>登録すると</span><b id="an-preview"></b></div>
+              <button type="button" class="an-btn" id="an-cancel">やめる</button>
+              <button type="button" class="an-btn is-primary" id="an-submit">追加する</button>
+            </div>
+          </div>
+
+          <div class="an-cards" id="an-cards"></div>
+
+          <div class="an-empty" id="an-empty" hidden>
+            <p class="an-eh"><span class="an-ex">例</span>企画書の提出</p>
+            <p class="an-en" aria-hidden="true"><span>あと</span><b>3</b><span>日</span></p>
+            <p class="an-ed">期限を入れておくと、残り時間が「日 → 時間 → 分」へ自動で切り替わります。更新はいりません。</p>
+            <button type="button" class="an-btn is-ink" id="an-first">最初の締切を入れる</button>
+          </div>
+
+          <div class="an-done" id="an-done" hidden>
+            <button type="button" class="an-dtoggle" id="an-dtoggle" aria-expanded="false" aria-controls="an-dlist"><span class="an-caret" aria-hidden="true"></span>完了した締切 <span id="an-dn"></span>件</button>
+            <ul class="an-dlist" id="an-dlist" hidden></ul>
+          </div>
+        </section>
+
+        <section class="an-today" aria-labelledby="an-today-btn">
+          <h2 class="an-th">
+            <button type="button" id="an-today-btn" aria-expanded="false" aria-controls="an-tbody" aria-keyshortcuts="T">
+              <span class="an-caret" aria-hidden="true"></span><span class="an-tt">今日やること</span><span class="an-td" id="an-tdate"></span>
+              <span class="an-tc" id="an-tcount"></span>
+            </button>
+          </h2>
+          <div class="an-tbody" id="an-tbody" hidden>
+            <div class="an-tbar" aria-hidden="true"><i id="an-tbar"></i></div>
+            <label class="an-tin"><Fragment set:html={PLUS(14, 1.6)} /><input id="an-task" type="text" placeholder="今日やることを書いて Enter" aria-label="今日やること（Enterで追加）" maxlength="120" autocomplete="off" enterkeyhint="done" /></label>
+            <ul class="an-tasks" id="an-tasks"></ul>
+            <p class="an-alldone" id="an-alldone" hidden><span class="an-sumi" aria-hidden="true">済</span>今日の分はぜんぶ完了。おつかれさまでした。</p>
+            <p class="an-notasks" id="an-notasks" hidden>思いついたら一行だけ。終わったらチェックで線が引けます。</p>
+            <p class="an-tnote">完了したものは翌朝に自動で片付きます</p>
+          </div>
+        </section>
+
+        <div class="an-out">
+          <button type="button" class="an-ghost" id="an-tsv" title="「タスク名」と「期限」をタブ区切りでコピー">
+            <svg width="11" height="11" viewBox="0 0 12 12" fill="none" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M8.5 3.5V2.5a1 1 0 0 0-1-1h-5a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1h1" stroke="currentColor" stroke-width="1.3"/></svg>コピーしてNotion・Excelに貼る
+          </button>
+          <button type="button" class="an-ghost" id="an-csv" title="残り日数の関数つきCSV。バックアップにも">
+            <svg width="11" height="11" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M6 1.5v6.2M3.4 5.2 6 7.8l2.6-2.6M2 10.2h8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Excelに書き出す（バックアップにも）
+          </button>
+        </div>
+      </div>
+
+      <p class="an-ft"><span id="an-store">データはこのブラウザの中だけに保存されます</span><a class="an-pw" href="/">Powered by インセンブル</a></p>
+
+      <div class="an-toast" id="an-toast" hidden><span id="an-toast-t" role="status"></span><button type="button" id="an-undo" hidden>元に戻す</button></div>
+    </div>
+  </div>
+</ToolPage>
+
+<script>
+  import "../../scripts/tools/deadline.js";
+</script>
+
+<style is:global>
+  /* ===== あと何日？（Claude Design のデザインを写したもの。色・寸法はデザインの値のまま） ===== */
+  @keyframes aw-in{from{opacity:0;transform:translateY(-6px) scale(.985)}to{opacity:1;transform:none}}
+  @keyframes aw-flip{0%{opacity:0;transform:translateY(8px);filter:blur(2px)}100%{opacity:1;transform:none;filter:none}}
+  @keyframes aw-breathe{0%,100%{box-shadow:0 0 0 0 rgba(234,88,12,.45)}50%{box-shadow:0 0 0 5px rgba(234,88,12,0)}}
+  @keyframes aw-settle{0%{box-shadow:0 0 0 0 rgba(234,88,12,.35)}100%{box-shadow:0 0 0 10px rgba(234,88,12,0)}}
+  @keyframes aw-nudge{0%,100%{transform:none}25%{transform:translateX(-3px)}50%{transform:translateX(3px)}75%{transform:translateX(-1.5px)}}
+  @keyframes aw-stamp{0%{opacity:0;transform:translateY(-50%) scale(1.9) rotate(-16deg)}55%{opacity:1;transform:translateY(-50%) scale(.92) rotate(-9deg)}100%{opacity:1;transform:translateY(-50%) scale(1) rotate(-9deg)}}
+  @keyframes aw-toast{from{opacity:0;transform:translate(-50%,10px)}to{opacity:1;transform:translate(-50%,0)}}
+  @keyframes aw-pop{0%{transform:scale(.7)}60%{transform:scale(1.12)}100%{transform:scale(1)}}
+
+  .an-panel{background:#F4F7F7}
+  .an{container:an/inline-size;position:relative;display:flex;flex-direction:column;background:#F4F7F7;color:#1B2A2D;font-family:"Zen Kaku Gothic New",-apple-system,BlinkMacSystemFont,"Hiragino Sans",sans-serif;-webkit-font-smoothing:antialiased;line-height:1.5}
+  .an [hidden]{display:none!important}
+  /* JS で中身を入れるまで本体を隠して高さを取っておく（後から差し込むカードで下の要素がずれないように＝CLS 対策） */
+  .an:not(.is-ready) :is(.an-nwrap,.an-main){visibility:hidden}
+  .an:not(.is-ready) .an-main{min-height:760px}
+  .an button{font-family:inherit;cursor:pointer;color:inherit}
+  .an :focus-visible{outline:2px solid #2E6A74;outline-offset:2px}
+  .an-num,.an-clock,.an-n,.an-tc,.an-prev b,.an-mshort{font-family:"Bricolage Grotesque","Zen Kaku Gothic New",sans-serif;font-variant-numeric:tabular-nums}
+
+  /* ヘッダー */
+  .an-hd{display:flex;align-items:center;gap:10px;padding:12px 20px;border-bottom:1px solid #DFE7E8;background:#F4F7F7}
+  .an-brand{display:flex;align-items:center;gap:8px;flex:none;white-space:nowrap;font-size:16px;font-weight:900;letter-spacing:.02em}
+  .an-clock{margin-left:auto;min-width:0;overflow:hidden;text-overflow:ellipsis;font-size:13px;color:#4E5E61;white-space:nowrap}
+  .an-hbtn{flex:none;white-space:nowrap;height:30px;padding:0 10px;display:flex;align-items:center;gap:6px;border-radius:8px;border:1px solid #CFDADC;background:#fff;font-size:12px;font-weight:700;color:#1B2A2D}
+  .an-hbtn:hover{border-color:#1B2A2D}
+  .an-hbtn[aria-pressed="true"]{background:#2E6A74;border-color:#2E6A74;color:#fff}
+
+  /* お知らせ */
+  .an-nwrap{padding:10px 20px 0}
+  .an-notice{max-width:1080px;margin:0 auto;display:flex;align-items:center;gap:10px;padding:10px 12px 10px 14px;border-radius:12px;transition:background-color .8s,color .8s;--n-bg:#E9EFF0;--n-ink:#3E4D50;--n-ibg:#fff;--n-iink:#617275;background:var(--n-bg);color:var(--n-ink)}
+  .an-notice[data-st="caution"]{--n-bg:#FBEBC4;--n-ink:#5E3D00;--n-ibg:#FFF6DE;--n-iink:#B87F12}
+  .an-notice[data-st="urgent"]{--n-bg:#FFDCC7;--n-ink:#8A2C07;--n-ibg:#FFF2EA;--n-iink:#EA580C}
+  .an-notice[data-st="over"]{--n-bg:#1E3438;--n-ink:#F4F7F7;--n-ibg:#2E4A4F;--n-iink:#FF8A4C}
+  .an-notice.is-in{animation:aw-in .45s ease-out}
+  .an-nic{width:22px;height:22px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--n-ibg);color:var(--n-iink)}
+  .an-ntx{flex:1;min-width:0;display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px;font-size:13.5px;line-height:1.45}
+  .an-ntx b{font-weight:700;text-wrap:pretty}
+  .an-ntx span{font-size:12px}
+  .an-later{flex:none;font-size:12px;font-weight:700;padding:4px 6px;border-radius:6px}
+  .an-later:hover{background:rgba(127,127,127,.15)}
+
+  /* 本体（幅が広くても 640px の1カラム） */
+  .an-main{flex:1;width:100%;max-width:640px;margin:0 auto;padding:16px 20px 12px;display:flex;flex-direction:column;gap:16px}
+  .an-dl{display:flex;flex-direction:column;gap:12px;min-width:0}
+  .an-sh{display:flex;align-items:center;gap:8px;min-height:32px}
+  .an-sh h2{font-size:15px;font-weight:900;letter-spacing:.04em}
+  .an-sn{font-size:12px;color:#617275}
+  .an-add{margin-left:auto;height:32px;padding:0 12px 0 10px;display:flex;align-items:center;gap:6px;border-radius:9px;border:1px solid #2E6A74;background:#2E6A74;color:#F4F7F7!important;font-size:12.5px;font-weight:700;transition:transform .15s}
+  .an-add:hover{transform:translateY(-1px)}
+  .an-add:active{transform:scale(.97)}
+  .an-samples{display:flex;align-items:center;flex-wrap:wrap;gap:4px 10px;font-size:12px;color:#4E5E61;padding:0 2px}
+  .an-samples button{font-size:12px;font-weight:700;color:#1B2A2D;text-decoration:underline;text-underline-offset:3px}
+  .an-btn{height:36px;padding:0 14px;border-radius:10px;border:1px solid #CFDADC;background:#fff;color:#4E5E61!important;font-size:13px;font-weight:700}
+  .an-btn.is-primary{border-color:#2E6A74;background:#2E6A74;color:#fff!important}
+  .an-btn.is-primary[aria-disabled="true"]{border-color:#93A1A4;background:#93A1A4}
+  .an-btn.is-ink{align-self:flex-start;height:34px;border-color:#1B2A2D;color:#1B2A2D!important;font-size:12.5px}
+  .an-ask{display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px;padding:12px 14px;border-radius:12px;background:#fff;border:1px solid #DFE7E8;animation:aw-in .35s ease-out}
+  .an-ask p{flex:1;min-width:200px;font-size:13px;line-height:1.6;color:#3E4D50}
+  .an-ask b{color:#1B2A2D}
+  .an-ask-a{display:flex;gap:6px}
+  .an-ask .an-btn{height:32px;padding:0 12px;font-size:12.5px}
+
+  /* 締切を追加 */
+  .an-composer{background:#fff;border:1.5px solid #2E6A74;border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:14px;animation:aw-in .28s ease-out;box-shadow:0 10px 30px -18px rgba(27,42,45,.5)}
+  .an-ctop{display:flex;align-items:center;flex-wrap:wrap;gap:4px 12px}
+  .an-cmode{font-size:11.5px;font-weight:700;color:#617275;letter-spacing:.06em}
+  .an-link{margin-left:auto;font-size:12px;font-weight:700;color:#2E6A74!important;text-decoration:underline;text-underline-offset:3px;padding:4px 0}
+  .an-one,.an-bulk{display:flex;flex-direction:column;gap:14px}
+  .an-tin-title{width:100%;border:none;outline:none;background:transparent;font-size:18px;font-weight:700;color:#1B2A2D;padding:2px 0;font-family:inherit}
+  .an-tin-title::placeholder,.an-tin input::placeholder,.an-bta::placeholder{color:#93A1A4}
+  .an-tin-title[aria-invalid="true"]{animation:aw-nudge .4s ease-in-out}
+  .an-fs{border:none;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  .an-fs legend{float:left;width:100%;margin-bottom:8px;font-size:11.5px;font-weight:700;color:#617275;letter-spacing:.06em}
+  .an-chips{display:contents}
+  .an-chip{height:32px;padding:0 11px;border-radius:999px;border:1px solid #CFDADC;background:#fff;color:#1B2A2D;font-size:12.5px;font-weight:700;transition:background-color .15s,color .15s}
+  .an-chip.is-time{font-family:"Bricolage Grotesque",sans-serif;font-size:13px;font-weight:600}
+  .an-chip[aria-pressed="true"]{background:#2E6A74;border-color:#2E6A74;color:#fff}
+  .an-pick{height:32px;padding:0 8px;border-radius:8px;border:1px solid #CFDADC;background:#F4F7F7;color:#1B2A2D;font-size:12.5px;font-family:inherit}
+  .an-hint{font-size:11.5px;color:#617275;margin-top:-6px}
+  .an-blabel{font-size:13px;font-weight:700;line-height:1.6}
+  .an-eg{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:11.5px;line-height:1.7;color:#4E5E61;background:#F4F7F7;border-radius:10px;padding:8px 12px;white-space:pre;overflow-x:auto;tab-size:14}
+  .an-bta{width:100%;min-height:7.5em;resize:vertical;border:1px solid #CFDADC;border-radius:11px;padding:10px 12px;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:13px;line-height:1.7;color:#1B2A2D;background:#fff}
+  .an-bta:focus{outline:none;border-color:#2E6A74;box-shadow:0 0 0 3px #D9ECEA}
+  .an-bres{font-size:12.5px;line-height:1.6;color:#4E5E61}
+  .an-bres b{color:#1B2A2D}
+  .an-bres .is-bad{color:#C2410C}
+  .an-cfoot{display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px;padding-top:12px;border-top:1px dashed #DFE7E8}
+  .an-prev{display:flex;flex-direction:column;gap:2px;margin-right:auto}
+  .an-prev span{font-size:11px;color:#617275}
+  .an-prev b{font-size:22px;font-weight:600;letter-spacing:-.02em;color:#1B2A2D}
+  .an-prev b.is-mute{color:#93A1A4;font-family:inherit;font-size:16px;font-weight:700}
+  .an-prev b.is-past{color:#C2410C;font-family:inherit;font-size:16px;font-weight:700}
+
+  /* 締切のカード：通常 → 注意（72時間以内）→ 緊急（24時間以内）→ 超過 */
+  .an-cards{display:flex;flex-direction:column;gap:12px}
+  /* 状態ごとの色（カードとミニの行で共通） */
+  .an-card,.an-mlist li{--bg:#fff;--bd:#DFE7E8;--ink:#1B2A2D;--sub:#617275;--num:#1B2A2D;--pbg:#EAF1F2;--pink:#4E5E61;--dot:#AEBBBD;--bar:#2E6A74;--track:#E6EDEE}
+  :is(.an-card,.an-mlist li)[data-st="caution"]{--bg:#FFF9EC;--bd:#F0D9A8;--ink:#3A2A0A;--sub:#86683A;--num:#8A5300;--pbg:#FBEBC4;--pink:#7A4E00;--dot:#D99A1E;--bar:#D99A1E;--track:#F5E6C4}
+  :is(.an-card,.an-mlist li)[data-st="urgent"]{--bg:#FFF2EA;--bd:#F3AE86;--ink:#3B1A0A;--sub:#99512C;--num:#C2410C;--pbg:#FFDCC7;--pink:#A3360A;--dot:#EA580C;--bar:#EA580C;--track:#FADCCB}
+  :is(.an-card,.an-mlist li)[data-st="over"]{--bg:#1E3438;--bd:#1E3438;--ink:#F4F7F7;--sub:#A9BBBE;--num:#F4F7F7;--pbg:#2E4A4F;--pink:#FFB085;--dot:#FF8A4C;--bar:#FF8A4C;--track:#2E4A4F}
+  .an-card{position:relative;border-radius:18px;padding:16px 18px 12px;background:var(--bg);border:1px solid var(--bd);color:var(--ink);box-shadow:0 1px 0 rgba(27,42,45,.03);
+    transition:background-color .8s ease,border-color .8s ease,color .8s ease,opacity .4s,box-shadow .8s;display:flex;flex-direction:column;gap:8px;overflow:hidden}
+  .an-card[data-st="urgent"]{box-shadow:0 12px 30px -20px rgba(234,88,12,.55)}
+  .an-card[data-st="over"]{box-shadow:0 14px 30px -18px rgba(0,0,0,.55)}
+  .an-card.is-featured{padding:22px 22px 16px}
+  .an-card.is-done{opacity:.85}
+  .an-card.is-in{animation:aw-in .4s ease-out}
+  .an-card.is-settle{animation:aw-settle .9s ease-out}
+  .an-card.is-nudge{animation:aw-nudge .5s ease-in-out}
+  .an-ctop2{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .an-pill{display:inline-flex;align-items:center;gap:6px;padding:3px 10px 3px 8px;border-radius:999px;background:var(--pbg);color:var(--pink);font-size:11.5px;font-weight:700;letter-spacing:.03em;transition:background-color .8s,color .8s}
+  .an-dot{width:7px;height:7px;border-radius:50%;background:var(--dot)}
+  :is(.an-card,.an-mlist li)[data-st="urgent"] .an-dot{animation:aw-breathe 1.8s ease-in-out infinite}
+  :is(.an-card,.an-mlist li)[data-st="over"] .an-dot{animation:aw-breathe 3s ease-in-out infinite}
+  .an-smp{font-size:10.5px;font-weight:700;color:var(--sub);border:1px solid var(--bd);padding:1px 6px;border-radius:5px}
+  .an-date{margin-left:auto;font-size:12px;color:var(--sub);font-variant-numeric:tabular-nums}
+  .an-ttl{font-size:15px;font-weight:700;line-height:1.4;text-wrap:pretty;overflow-wrap:anywhere}
+  .is-featured .an-ttl{font-size:17px}
+  .an-left{display:flex;align-items:baseline;flex-wrap:wrap;color:var(--num);line-height:1;padding:2px 0 4px;transition:color .8s}
+  .an-left.is-flip,.an-over.is-flip{animation:aw-flip .5s ease-out}
+  .an-ato{font-size:15px;font-weight:700;margin-right:8px;color:var(--sub)}
+  .an-p{display:inline-flex;align-items:baseline;gap:3px;margin-right:10px}
+  .an-n{font-size:42px;font-weight:600;letter-spacing:-.04em}
+  .an-u{font-size:15px;font-weight:700}
+  .is-featured .an-n{font-size:68px}
+  .is-featured .an-u,.is-featured .an-ato{font-size:18px}
+  .an-bar{height:4px;border-radius:4px;background:var(--track);overflow:hidden}
+  .an-bar i{display:block;height:100%;width:0;background:var(--bar);border-radius:4px;transition:width 1s linear,background-color .8s}
+  .an-over{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 12px;padding:2px 0 4px}
+  .an-over b{font-size:26px;font-weight:900;letter-spacing:.01em;line-height:1.1}
+  .is-featured .an-over b{font-size:34px}
+  .an-over span{font-family:"Bricolage Grotesque",sans-serif;font-size:15px;font-weight:600;color:#FFB085}
+  .an-acts{display:flex;align-items:center;gap:2px;margin:0 -6px -4px}
+  .an-act{height:30px;padding:0 8px;display:flex;align-items:center;gap:5px;border-radius:8px;color:var(--sub)!important;font-size:12px;font-weight:700}
+  .an-act:hover,.an-act[aria-expanded="true"]{background:rgba(127,127,127,.14)}
+  .an-act.is-del{margin-left:auto;width:30px;padding:0;justify-content:center}
+  .an-fx{display:flex;flex-direction:column;border-top:1px dashed var(--bd);margin-top:2px;padding-top:6px;animation:aw-in .25s ease-out}
+  .an-fxr{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:2px 10px;padding:6px 0}
+  .an-fxr+.an-fxr{border-top:1px solid color-mix(in srgb,var(--bd) 60%,transparent)}
+  .an-fxl{font-size:11.5px;font-weight:700;color:var(--sub)}
+  .an-fxl small{font-weight:400;margin-left:6px}
+  .an-fxc{grid-column:1;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:11.5px;overflow-wrap:anywhere}
+  .an-fxb{grid-column:2;grid-row:1/3;height:28px;padding:0 10px;border-radius:7px;border:1px solid var(--bd);font-size:11.5px;font-weight:700;color:var(--sub)!important}
+  .an-fxb.is-ok{background:#1B2A2D;border-color:#1B2A2D;color:#F4F7F7!important}
+  .an-fxn{font-size:11px;color:var(--sub);padding-top:4px}
+  .an-stamp{position:absolute;right:22px;top:50%;width:76px;height:76px;border-radius:50%;border:3px solid #D2462B;color:#D2462B;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(255,255,255,.6);animation:aw-stamp .5s cubic-bezier(.2,1.4,.4,1) forwards;pointer-events:none}
+  .an-stamp b{font-size:24px;font-weight:900;line-height:1}
+  .an-stamp span{font-family:"Bricolage Grotesque",sans-serif;font-size:10px;font-weight:600;margin-top:3px}
+
+  /* 空の状態・完了した締切 */
+  .an-empty{border:1.5px dashed #CFDADC;border-radius:18px;padding:22px 20px;display:flex;flex-direction:column;gap:10px;animation:aw-in .3s ease-out}
+  .an-eh{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;color:#7D8C8F}
+  .an-ex{font-size:11px;font-weight:700;border:1px solid #DFE7E8;padding:1px 7px;border-radius:999px}
+  .an-en{display:flex;align-items:baseline;gap:6px;color:#C5D1D3;line-height:1}
+  .an-en span{font-size:16px;font-weight:700}
+  .an-en b{font-family:"Bricolage Grotesque",sans-serif;font-size:52px;font-weight:600;letter-spacing:-.04em}
+  .an-ed{font-size:13px;line-height:1.7;color:#4E5E61}
+  .an-done{display:flex;flex-direction:column;gap:4px}
+  .an-dtoggle{align-self:flex-start;padding:6px 2px;display:flex;align-items:center;gap:6px;color:#617275!important;font-size:12px;font-weight:700}
+  .an-caret{display:inline-block;transition:transform .2s}
+  .an-caret::before{content:"›"}
+  [aria-expanded="true"]>.an-caret{transform:rotate(90deg)}
+  .an-dlist{list-style:none;display:flex;flex-direction:column;gap:4px}
+  .an-dlist li{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:12px;border:1px dashed #CFDADC;font-size:13px;color:#617275;animation:aw-in .25s ease-out}
+  .an-sumi{width:22px;height:22px;flex:none;border-radius:50%;border:1.5px solid #D2462B;color:#D2462B;font-size:9px;font-weight:900;display:flex;align-items:center;justify-content:center;transform:rotate(-9deg)}
+  .an-dlist .an-dt{flex:1;min-width:0;text-decoration:line-through;text-decoration-color:#AEBBBD;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .an-dlist small{font-size:11px;white-space:nowrap}
+  .an-dlist button{font-size:11.5px;font-weight:700;color:#4E5E61!important;padding:4px}
+
+  /* 今日やること（付箋） */
+  .an-today{background:#EAF4F3;border:1px solid #CFE3E1;border-radius:16px;padding:10px 14px;display:flex;flex-direction:column;gap:10px;min-width:0;box-shadow:0 1px 0 #CFE3E1,0 14px 28px -22px rgba(30,90,95,.35)}
+  .an-today:has([aria-expanded="true"]){padding:12px 14px}
+  .an-th button{width:100%;display:flex;align-items:center;gap:8px;min-height:28px;text-align:left}
+  .an-th .an-caret{font-size:14px;color:#2E6A74}
+  .an-tt{font-size:14px;font-weight:900;letter-spacing:.04em}
+  .an-td{font-size:12px;font-weight:400;color:#2E6A74}
+  .an-tc{margin-left:auto;font-size:15px;font-weight:600}
+  .an-tc small{font-size:inherit;color:#5E8789}
+  .an-tc.is-pop{animation:aw-pop .4s ease-out}
+  .an-tbody{display:flex;flex-direction:column;gap:10px}
+  .an-tbar{height:3px;border-radius:3px;background:#D6E8E6;overflow:hidden}
+  .an-tbar i{display:block;height:100%;width:0;background:#2E6A74;border-radius:3px;transition:width .5s cubic-bezier(.3,1.3,.5,1)}
+  .an-tin{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:11px;background:rgba(255,255,255,.7);border:1px solid #CFE3E1;color:#2E6A74}
+  .an-tin:focus-within{border-color:#2E6A74}
+  .an-tin input{flex:1;min-width:0;border:none;outline:none;background:transparent;font-size:14px;color:#1B2A2D;height:26px;font-family:inherit}
+  .an-tasks{list-style:none;display:flex;flex-direction:column}
+  .an-task{display:flex;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px dashed #D3E5E3}
+  .an-task.is-in{animation:aw-in .35s ease-out}
+  .an-chk{width:22px;height:22px;flex:none;border-radius:7px;border:1.5px solid #A9C6C5;background:#fff;color:#EAF4F3;display:flex;align-items:center;justify-content:center;padding:0;transition:background-color .2s,border-color .2s}
+  .an-chk svg{opacity:0;transition:opacity .2s}
+  .an-chk[aria-pressed="true"]{background:#2E6A74;border-color:#2E6A74}
+  .an-chk[aria-pressed="true"] svg{opacity:1}
+  .an-chk.is-pop{animation:aw-pop .35s ease-out}
+  .an-tx{position:relative;flex:1;min-width:0;font-size:14px;line-height:1.5;color:#1B2A2D;transition:color .3s;overflow-wrap:anywhere}
+  .an-tx i{position:absolute;left:0;top:52%;height:1.5px;width:0;background:#93A1A4;transition:width .35s ease-out;border-radius:2px}
+  .an-task.is-done .an-tx{color:#7D8C8F}
+  .an-task.is-done .an-tx i{width:100%}
+  .an-tag{flex:none;font-size:10.5px;font-weight:700;color:#2E6A74;background:#D9ECEA;padding:2px 6px;border-radius:5px}
+  .an-x{flex:none;width:26px;height:26px;color:#2E6A74!important;opacity:.55;border-radius:6px;display:flex;align-items:center;justify-content:center}
+  .an-x:hover,.an-x:focus-visible{opacity:1;background:rgba(46,106,116,.12)}
+  .an-alldone{display:flex;align-items:center;gap:10px;padding:10px 4px 2px;font-size:13.5px;font-weight:700;color:#1F3A3D;animation:aw-in .4s ease-out}
+  .an-alldone .an-sumi{width:30px;height:30px;border-width:2px;font-size:12px;animation:aw-pop .45s ease-out}
+  .an-notasks{margin:4px 2px;font-size:13px;line-height:1.7;color:#3F6E70}
+  .an-tnote{font-size:11px;color:#2E6A74;padding:2px 2px 0}
+
+  /* 書き出し・フッター・トースト */
+  .an-out{display:flex;justify-content:center;flex-wrap:wrap;gap:2px 8px}
+  .an-ghost{padding:6px 8px;display:flex;align-items:center;gap:6px;color:#617275!important;font-size:12px;font-weight:700;border-radius:8px}
+  .an-ghost:hover{color:#1B2A2D!important;background:rgba(127,127,127,.1)}
+  .an-ft{padding:10px 20px 14px;display:flex;flex-wrap:wrap;gap:6px 16px;justify-content:center;font-size:11px;color:#617275;max-width:1080px;width:100%;margin:0 auto}
+  .an-ft a{color:#4E5E61;text-decoration:none}
+  .an-ft a:hover{color:#1B2A2D;text-decoration:underline}
+  .an-pw{display:none}
+  .an-toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:60;display:flex;align-items:center;gap:14px;padding:10px 12px 10px 16px;border-radius:12px;background:#1B2A2D;color:#F4F7F7;font-size:13px;box-shadow:0 12px 30px -12px rgba(0,0,0,.45);animation:aw-toast .25s ease-out;white-space:nowrap;max-width:calc(100vw - 32px)}
+  .an-toast span{overflow:hidden;text-overflow:ellipsis}
+  .an-toast button{color:#FFB085!important;font-size:13px;font-weight:700;padding:2px 4px}
+
+  /* ミニ（常駐用） */
+  .an-mini{flex:1;padding:8px 10px;display:flex;flex-direction:column;gap:4px;max-width:420px;width:100%;margin:0 auto}
+  .an-mlist{list-style:none;display:flex;flex-direction:column;gap:4px}
+  .an-mlist li{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:9px;background:var(--bg);border:1px solid var(--bd);color:var(--ink);transition:background-color .8s,border-color .8s}
+  .an-mlist .an-mt{flex:1;min-width:0;font-size:12.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .an-mshort{font-size:15px;font-weight:600;letter-spacing:-.01em;color:var(--num);white-space:nowrap}
+  .an-mempty{padding:12px;border:1px dashed #CFDADC;border-radius:12px;font-size:13px;color:#617275}
+  .an-mtoday{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:9px;background:#EAF4F3;border:1px solid #CFE3E1;font-size:12px}
+  .an-mtoday b{white-space:nowrap}
+  .an-mtoday span{flex:1;min-width:0;color:#4E5E61;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .an.is-mini .an-hd{padding:7px 10px}
+  .an.is-mini .an-nwrap,.an.is-mini .an-main{display:none}
+  /* ミニのフッターは、デザインどおり右下の「Powered by」だけ（幅が狭くても1行に収まるように） */
+  .an.is-mini .an-ft{padding:2px 12px 8px;justify-content:flex-end;font-size:10px}
+  .an.is-mini #an-store{display:none}
+
+  /* スマホ（アプリの実際の幅で切り替える） */
+  @container an (max-width:439px){
+    .an-hd{padding:12px 14px}
+    .an-nwrap{padding:10px 14px 0}
+    .an-main{padding:16px 14px 12px}
+    .an-ft{padding:10px 14px 14px}
+    .an-card.is-featured{padding:18px 18px 14px}
+    .is-featured .an-n{font-size:56px}
+    .an-clock{font-size:12px}
+  }
+  /* タッチ操作では押せる大きさを確保。入力欄は 16px（iOS で拡大されないように） */
+  @media (pointer:coarse){
+    .an-act,.an-hbtn,.an-chip,.an-pick,.an-ghost{min-height:40px}
+    .an-act.is-del{width:40px}
+    .an-x{width:36px;height:36px}
+    .an-chk{position:relative}
+    .an-chk::after{content:"";position:absolute;inset:-10px}
+    .an-tin input,.an-pick,.an-bta{font-size:16px}
+  }
+
+  /* アプリとして開いたとき：サイトの枠を隠して、ツールだけを画面いっぱいに */
+  @media (display-mode:standalone){
+    body{background:#F4F7F7}
+    .hdr,.tooltop,.tz-hero,.read-zone,.corp,.ftr{display:none!important}
+    .tool-zone{padding:0;border:0;background:#F4F7F7}
+    .tool-zone>.wrap{max-width:none;padding:0}
+    .an-panel{margin:0;border:0;border-radius:0;box-shadow:none}
+    .an{min-height:100dvh}
+    .an-hd{position:sticky;top:0;z-index:5}
+    .an-pw{display:inline}
+    .an-ft{justify-content:space-between}
+  }
+  html.an-app body{background:#F4F7F7}
+  html.an-app :is(.hdr,.tooltop,.tz-hero,.read-zone,.corp,.ftr){display:none!important}
+  html.an-app .tool-zone{padding:0;border:0;background:#F4F7F7}
+  html.an-app .tool-zone>.wrap{max-width:none;padding:0}
+  html.an-app .an-panel{margin:0;border:0;border-radius:0;box-shadow:none}
+  html.an-app .an{min-height:100dvh}
+  html.an-app .an-hd{position:sticky;top:0;z-index:5}
+  html.an-app .an-pw{display:inline}
+
+  @media (prefers-reduced-motion:reduce){
+    .an *,.an *::before,.an *::after{animation:none!important;transition:none!important}
+  }
+</style>
