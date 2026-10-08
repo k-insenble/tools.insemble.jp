@@ -11,6 +11,7 @@
 | `/pdf-extract/` | PDFばらし屋 | PDFから文字（全体・ページごと）・貼られた画像・ページ画像を取り出す。全部入りZIP |
 | `/seat/` | 席順メーカー | 名前 → 卓の数・人数 → 座席表（長机／丸テーブル）。画像保存・コピー |
 | `/schedule-excel/` | スケジュール→Excelメーカー | 予定を1行ずつ → 一覧表／進行表／担当別 → Excel（.xlsx）・CSV |
+| `/deadline/` | あと何日？ | 締切の残り時間（日→時間→分で自動更新）＋今日やること。localStorage に保存、まとめて貼り付け・タブ区切りコピー・関数入りCSV。PWA（`public/deadline/` の manifest・sw.js）でアプリとして置け、オフラインでも開ける。デザインの元データは Claude Design の「あと何日？」 |
 | `/roulette/` | イベント用ルーレット | 名前 → 回す → 当たった人を外して次へ。結果の一覧・大きく表示 |
 | `/group/` | グループ分けメーカー | 名前 → グループの数・人数 → 均等に分ける。部署ばらし・別にしたい組 |
 | `/terms/` | 利用規約・プライバシーポリシー | 全ページのフッターからリンク |
@@ -75,7 +76,7 @@ src/
   layouts/ToolPage.astro 端末内ツールの共通の枠（道具ゾーン／使い方／こんなときに使えます／FAQ／関連ツール／概要／運営会社・JSON-LD）
   pages/index.astro    ツールハブ
   pages/ogp/index.astro OGPチェッカー
-  pages/{pdf-extract,seat,schedule-excel,roulette,group}/index.astro  端末内のツール（ToolPage を使う）
+  pages/{pdf-extract,seat,schedule-excel,roulette,group,deadline}/index.astro  端末内のツール（ToolPage を使う）
   pages/404.astro
   components/
     Header / Footer / Corp / SectionHead / Icon / Faq / Scenes .astro   共通の部品（Scenes＝こんなときに使えます）

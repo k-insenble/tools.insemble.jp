@@ -43,6 +43,7 @@ const P = {
 
 /* ツール用（ハブの一覧・お気に入り。線は少し細め） */
 const T = {
+  timer: '<circle cx="12" cy="13.5" r="7.5"/><path d="M12 13.5V9.5"/><path d="M12 13.5l2.8 1.8"/><line x1="10" y1="3" x2="14" y2="3"/><line x1="12" y1="3" x2="12" y2="6"/>',
   share: '<circle cx="17" cy="6" r="2.6"/><circle cx="6.5" cy="12" r="2.6"/><circle cx="17" cy="18" r="2.6"/><line x1="9" y1="10.7" x2="14.6" y2="7.3"/><line x1="9" y1="13.3" x2="14.6" y2="16.7"/>',
   shield: '<path d="M12 3.5 19.5 6v6c0 4-3.2 7.2-7.5 8.5C7.7 19.2 4.5 16 4.5 12V6L12 3.5Z"/><polyline points="9 12 11.2 14.2 15.2 10.2"/>',
   tags: '<path d="M4 12.5V5a1 1 0 0 1 1-1h7.5L20 11.5 12.5 19 4 12.5Z"/><circle cx="8.3" cy="8.3" r="1.1" fill="currentColor" stroke="none"/>',
