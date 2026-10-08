@@ -31,14 +31,14 @@ const jsonLd = [
 
 const NAV: [string, string][] = [["#tools", "ツール"], ["#learn", "学ぶ"], ...(HUB.SHOW_UPDATES ? [["#updates", "更新情報"] as [string, string]] : []), ["#faq", "よくある質問"]];
 const FOOT: { h: string; items: [string, string][] }[] = [
-  { h: "ツール", items: [...live.map((t) => [t.name, "/" + t.slug + "/"] as [string, string]), ["ツール一覧", "#tools"]] },
+  { h: "ツール", items: [...live.map((t) => [HUB.label(t), "/" + t.slug + "/"] as [string, string]), ["ツール一覧", "#tools"]] },
   { h: "学ぶ", items: [["OGPタグ辞典", "/ogp/#glossary"], ...(HUB.SHOW_UPDATES ? [["更新情報", "#updates"] as [string, string]] : [])] },
   { h: "サポート", items: [["よくある質問", "#faq"]] },
 ];
 ---
 <Base
   title="仕事とWeb制作の無料ツール集｜PDF・席順・Excel・OGP｜insemble tools"
-  description="PDFの文字や画像を取り出す、席順やグループを決める、予定表をExcelにする、OGPをチェックする。毎回ちょっと面倒な作業を片づける無料ツール集です。登録不要・広告なしで、ブラウザだけで使えます。"
+  description="PDFの文字や画像を取り出す、席順やグループを決める、予定表をExcelにする、締切までの残り時間を数える、OGPをチェックする。毎回ちょっと面倒な作業を片づける無料ツール集です。登録不要・広告なしで、ブラウザだけで使えます。"
   path="/"
   jsonLd={jsonLd}
 >
@@ -60,12 +60,12 @@ const FOOT: { h: string; items: [string, string][] }[] = [
       <div class="wrap hub-hero-in">
         <h1 class="hub-h1"><Icon name="sparkle" size={14} />無料で使える 仕事とWeb制作の便利ツール集</h1>
         <p class="hub-title">毎回ちょっと<span class="hl">面倒</span>を、<br class="sp-br" />ここで片づける。</p>
-        <p class="hub-sub">登録なし・広告なし。ブラウザですぐ使えます。</p>
+        <p class="hub-sub">登録も広告もなく、ブラウザを開けばすぐに使えます。</p>
 
         <!-- ツールを探す専用。入れたそばから下の一覧を絞り込む（URLを貼ったときは、OGPチェッカーへのリンクを出すだけで、勝手には動かさない） -->
         <form class="hub-search" id="hub-search" role="search" data-clarity-mask="True">
           <Icon name="search" size={19} style="color:var(--muted)" />
-          <input type="search" enterkeyhint="search" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="ツール名・やりたいこと（例：PDF、席順）" aria-label="ツールを探す" aria-controls="live-list" />
+          <input type="search" enterkeyhint="search" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="ツール名・やりたいこと（例：PDF、席順、締切）" aria-label="ツールを探す" aria-controls="live-list" />
           <button type="button" class="hub-clear" id="hub-clear" aria-label="入力を消す" hidden><Icon name="x" size={14} /></button>
         </form>
         {urlTools[0] && (
@@ -105,8 +105,8 @@ const FOOT: { h: string; items: [string, string][] }[] = [
         </div>
         <div class="no-hit" id="no-hit" hidden>
           <p class="no-hit-t">「<span id="no-hit-q"></span>」に合うツールが見つかりませんでした</p>
-          <p class="no-hit-d">ツールは順次ふやしています。別のことばでも探してみてください。</p>
-          <div class="no-hit-a"><button type="button" class="btn btn-ghost" id="no-hit-clear">検索をクリア</button></div>
+          <p class="no-hit-d">「PDF」「席順」「締切」のように、短いことばにすると見つかりやすくなります。</p>
+          <div class="no-hit-a"><button type="button" class="btn btn-ghost" id="no-hit-clear">すべてのツールを表示</button></div>
         </div>
       </section>
     </div>
@@ -153,7 +153,7 @@ const FOOT: { h: string; items: [string, string][] }[] = [
 
     <!-- ===== 学ぶ ===== -->
     <section class="wrap sec">
-      <SectionHead id="learn" kicker="学ぶ" title="使いながら、わかる" sub="ツールの下には必ず解説を置いています。用語の意味から直し方まで。" />
+      <SectionHead id="learn" kicker="学ぶ" title="使いながら、分かる" sub="用語の意味や設定のコツを、ツールと行き来しながら読めるようにまとめています。" />
       <div class="learn">
         {HUB.LEARN.map((l) => {
           const inner = (
@@ -193,7 +193,7 @@ const FOOT: { h: string; items: [string, string][] }[] = [
 
     <!-- ===== このサイトについて ===== -->
     <section class="wrap sec">
-      <SectionHead id="about" kicker="このサイトについて" title="安心して使えること" />
+      <SectionHead id="about" kicker="このサイトについて" title="安心して使っていただくために" />
       <div class="steps reveal">
         {HUB.TRUST.map((x, i) => (
           <div class="step">
@@ -211,7 +211,7 @@ const FOOT: { h: string; items: [string, string][] }[] = [
       <Faq items={HUB.FAQ} />
     </section>
 
-    <Corp desc="サイト制作から、業務に合わせた専用ツールの開発まで。ここにあるツールと同じ手ざわりで、御社のためにつくります。「社内のこの作業、Webで片づけられないかな」というご相談もどうぞ。" />
+    <Corp desc="Webサイトの制作から、業務に合わせた専用ツールの開発までお受けしています。ここにあるツールと同じように、開いてすぐに使えるものを会社やチームに合わせてつくります。「社内のこの作業、Webで片づけられないかな」という段階からでも、ご相談いただけます。" />
   </main>
 
   <Footer cols={FOOT} />

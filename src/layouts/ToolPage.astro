@@ -15,6 +15,10 @@ import { ORG, PUBLISHER } from "../data/org.js";
 import "../styles/ogp.css";
 import "../styles/tools.css";
 
+/* 読みものの中から、ツールの操作をその場で始めるリンク（例：使い方の「締切を追加する」）
+   押すとツール（#tool）へ移動する。do はツールの JS が [data-tool-do] のクリックを拾って動かす（拾わないツールでは移動だけ） */
+type Cta = { label: string; do?: string };
+
 interface Props {
   slug: string;
   title: string;            // <title>
@@ -24,10 +28,10 @@ interface Props {
   lead: [string, string, string]; // 大きな一文：[前, 強調, 後]
   sub: string;
   meta: [icon: string, text: string][]; // パンくず横の「端末内で処理」など
-  steps: { t: string; d: string }[];
+  steps: { t: string; d: string; cta?: Cta }[];
   scenes: { intro: string; groups: SceneGroup[] }; // こんなときに使えます（利用シーン）
-  faq: { q: string; a: string }[];
-  about: [string, string][];
+  faq: { q: string; a: string; cta?: Cta }[];
+  about: [string, string, boolean?][]; // 3つ目を true にすると「くわしくは利用規約をご覧ください。」を添える
   corp: string;             // 下の「運営会社」に出す、このツールに合わせた一言
   relatedSub?: string;      // 関連ツールの見出しの下に出す、つなぎの一言（例：席が決まったら、順番はルーレットで）
   appCategory?: string;     // schema.org の applicationCategory
@@ -37,11 +41,12 @@ interface Props {
 }
 const { slug, title, description, ogTitle, h1, lead, sub, meta, steps, scenes, faq, about, corp, relatedSub, appCategory = "UtilitiesApplication", updated, app, fonts } = Astro.props;
 
-/* 概要の最後には、どのツールでも同じ「料金」「免責」を付ける（書き方は規約 /terms/ にそろえる） */
-const aboutRows: [string, string][] = [
+/* 概要の最後には、どのツールでも同じ「料金」「免責」を付ける（書き方は規約 /terms/ にそろえる）
+   3つ目を true にした行は、最後に「くわしくは利用規約（リンク）をご覧ください。」を添える */
+const aboutRows: [string, string, boolean?][] = [
   ...about,
-  ["料金", "無料・登録不要。PC・スマホどちらでも使えます。"],
-  ["免責", "結果の正確さは保証しません。このツールを使って生じた損害について、当社に故意または重大な過失がある場合を除き、責任を負いません（くわしくは利用規約）。"],
+  ["料金", "無料で、登録も要りません。PC・スマホのどちらでも使えます。"],
+  ["免責", "結果の正確さは保証しません。このツールを使って生じた損害について、当社に故意または重大な過失がある場合を除き、責任を負いません。", true],
 ];
 
 const tool = HUB.TOOLS.find((t) => t.slug === slug);
@@ -60,7 +65,7 @@ const jsonLd = [
 
 const NAV: [string, string][] = [["/#tools", "ツール一覧"], ["#howto", "使い方"], ["#faq", "よくある質問"]];
 const FOOT: { h: string; items: [string, string][] }[] = [
-  { h: "ツール", items: [...live.map((t) => [t.name, "/" + t.slug + "/"] as [string, string]), ["ツール一覧", "/#tools"]] },
+  { h: "ツール", items: [...live.map((t) => [HUB.label(t), "/" + t.slug + "/"] as [string, string]), ["ツール一覧", "/#tools"]] },
   { h: "このページ", items: [["使い方", "#howto"], ["こんなときに使えます", "#scenes"], ["よくある質問", "#faq"], ["関連ツール", "#related"]] },
 ];
 
@@ -92,7 +97,7 @@ const related = live.filter((t) => t.slug !== slug).sort((a, b) => rank(a) - ran
         <div class="hero-glow"></div>
         <div class="wrap hero-in">
           <h1 class="badge"><Icon name="sparkle" size={14} />{h1}</h1>
-          <p class="hero-title">{lead[0]}<span class="hl">{lead[1]}</span>{lead[2]}</p>
+          <p class="hero-title"><span class="hero-a">{lead[0]}</span><span class="hl">{lead[1]}</span>{lead[2]}</p>
           <p class="tz-sub">{sub}</p>
         </div>
       </section>
@@ -124,6 +129,7 @@ const related = live.filter((t) => t.slug !== slug).sort((a, b) => rank(a) - ran
               <div class="step-n">{i + 1}</div>
               <div class="step-t">{s.t}</div>
               <p class="step-d">{s.d}</p>
+              {s.cta && <a class="more-link step-cta" href="#tool" data-tool-do={s.cta.do}>{s.cta.label}<Icon name="arrow" size={15} /></a>}
             </div>
           ))}
         </div>
@@ -134,7 +140,7 @@ const related = live.filter((t) => t.slug !== slug).sort((a, b) => rank(a) - ran
       <slot name="guide" />
 
       <section class="wrap sec">
-        <SectionHead id="faq" kicker="よくある質問" title="つまずきやすいポイント Q&A" />
+        <SectionHead id="faq" kicker="よくある質問" title="つまずきやすいところと、その答え" />
         <Faq items={faq} />
       </section>
 
@@ -161,14 +167,14 @@ const related = live.filter((t) => t.slug !== slug).sort((a, b) => rank(a) - ran
           <div>
             <div class="log-h">概要</div>
             <dl>
-              {aboutRows.map(([k, v]) => <div><dt>{k}</dt><dd>{v}</dd></div>)}
+              {aboutRows.map(([k, v, terms]) => <div><dt>{k}</dt><dd>{v}{terms && <>くわしくは<a href="/terms/">利用規約</a>をご覧ください。</>}</dd></div>)}
             </dl>
           </div>
         </div>
       </section>
     </div>
 
-    <Corp title={["このようなWebツールを、", "自社向けにつくることもできます。"]} desc={corp} cta="Webツール制作のご相談" />
+    <Corp title={["このようなWebツールを、", "会社やチームの専用につくることもできます。"]} desc={corp} cta="Webツール制作のご相談" />
   </main>
 
   <Footer cols={FOOT} />

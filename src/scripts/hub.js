@@ -45,7 +45,8 @@ function drawFavs() {
     const on = favs.includes(b.dataset.fav);
     b.classList.toggle("on", on);
     b.setAttribute("aria-pressed", on);
-    b.setAttribute("aria-label", on ? "お気に入りから外す" : "お気に入りに追加");
+    const name = bySlug(b.dataset.fav)?.name ?? "";
+    b.setAttribute("aria-label", on ? `${name}をお気に入りから外す` : `${name}をお気に入りに追加`);
   });
 }
 $$("[data-fav]").forEach((b) => b.addEventListener("click", () => {
@@ -117,8 +118,8 @@ function filter(raw) {
   const box = $("#no-hit");
   box.hidden = !terms.length || live > 0;
   $("#no-hit-q").textContent = raw;
-  $(".no-hit-t", box).lastChild.textContent = soon ? "」は、いま準備中です" : "」に合うツールが見つかりませんでした";
-  $(".no-hit-d", box).textContent = soon ? "下の「これから公開するツール」にあります。公開まで、もうしばらくお待ちください。" : "ツールは順次ふやしています。別のことばでも探してみてください。";
+  $(".no-hit-t", box).lastChild.textContent = soon ? "」に合うツールは、いま準備中です" : "」に合うツールが見つかりませんでした";
+  $(".no-hit-d", box).textContent = soon ? "下の「これから公開するツール」に載せています。公開まで、もうしばらくお待ちください。" : "「PDF」「席順」「締切」のように、短いことばにすると見つかりやすくなります。";
   return { live, soon };
 }
 $("#no-hit-clear").addEventListener("click", () => { input.value = ""; onInput(); input.focus(); });

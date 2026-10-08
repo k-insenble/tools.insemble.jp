@@ -3,7 +3,7 @@ import Icon from "./Icon.astro";
 
 interface Props {
   desc: string;
-  title?: string[];  // 見出し（1要素＝1行）。ツールページでは「このようなツールを自社向けに」の一言にする
+  title?: string[];  // 見出し（1要素＝1行）。ツールページでは「会社やチームの専用に」の一言にする
   cta?: string;      // 相談ボタンの文言
 }
 const { desc, title = ["このサイトのツールをつくっている、", "札幌のWeb制作会社です。"], cta = "制作のご相談" } = Astro.props;
