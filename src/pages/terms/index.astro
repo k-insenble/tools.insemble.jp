@@ -10,7 +10,7 @@ import HUB from "../../data/hub.js";
 import "../../styles/hub.css";
 
 const UPDATED = "2026-09-30";
-const REVISED = "2026-10-08"; // あと何日？（ブラウザへの保存・Service Worker・フォント）、トップの「最近使ったツール」を追記
+const REVISED = "2026-10-08"; // あと何日？（ブラウザへの保存・Service Worker・フォント）、トップの「最近使ったツール」を追記。第三者への提供に、アクセス解析などの外部サービスを例外として明記
 const url = "https://tools.insemble.jp/terms/";
 const jsonLd = [
   ORG,
@@ -24,7 +24,7 @@ const FOOT: { h: string; items: [string, string][] }[] = [
 ---
 <Base
   title="利用規約・プライバシーポリシー｜insemble tools"
-  description="insemble tools を使うときの約束と、入力した内容・ファイル・アクセス解析の情報の扱いをまとめています。入力したURLやファイル、結果は保存しません。"
+  description="insemble tools を使うときの約束と、入力した内容・ファイル・アクセス解析の情報の扱いをまとめています。入力したURLやファイル、結果は、運営者のサーバーに保存しません。"
   path="/terms/"
   jsonLd={jsonLd}
 >
@@ -109,7 +109,7 @@ const FOOT: { h: string; items: [string, string][] }[] = [
       <p>このサイトの見出しの文字（フォント）と、あと何日？の画面で使う文字は、Google Fonts（Google が提供するフォントの配信サービス）から読み込んでいます。そのため、Google には、あなたのIPアドレスなどが伝わります。あと何日？に入れた締切などの内容は、Google に送りません。</p>
 
       <h3>4. 第三者への提供</h3>
-      <p>法律に基づく場合を除き、このサイトで得た情報を、ほかの会社や人に渡すことはありません。</p>
+      <p>このサイトで得た情報を、ほかの会社や人に渡すことはありません。ただし、法律に基づく場合と、2・3に書いたサービス（Google アナリティクス・Microsoft Clarity・Google Fonts）に、それぞれの仕組みとして届く情報は除きます。</p>
 
       <h3>5. 運営会社のプライバシーポリシーとの関係</h3>
       <p>このページには、このサイトのツールに特有の情報の扱いを書いています。お問い合わせで受け取った個人情報の扱いや、開示の請求など、このページに書いていないことは、運営会社のプライバシーポリシーに従います。くわしくは、<a href="https://www.insemble.co.jp/privacy" target="_blank" rel="noopener">株式会社インセンブルのプライバシーポリシー</a>をご覧ください。</p>
