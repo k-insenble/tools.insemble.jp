@@ -16,7 +16,7 @@ import { ORG, PUBLISHER } from "../../data/org.js";
 import "../../styles/ogp.css";
 
 const url = "https://tools.insemble.jp/ogp/";
-const description = "URLを入れるだけで、X・Facebook・LINE・Slack・Discord・Teamsでのシェア表示を確認できる無料のOGPチェッカー。サイトの公開やリニューアルのあとに、OGP画像やmetaタグの設定漏れを採点し、直し方のコードまで出します。";
+const description = "OGPチェッカーは、URLを入れるだけで、X・Facebook・LINE・Slack・Discord・Teamsでのシェア表示を確認できる無料ツールです。サイトの公開やリニューアルのあとに、OGP画像やmetaタグの設定漏れを採点し、直し方のコードまで出します。";
 const jsonLd = [
   ORG,
   { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "OGPチェッカー", description, applicationCategory: "DeveloperApplication", operatingSystem: "Web", inLanguage: "ja", url, dateModified: D.UPDATED, offers: { "@type": "Offer", price: "0", priceCurrency: "JPY" }, publisher: PUBLISHER },
@@ -26,27 +26,27 @@ const jsonLd = [
 
 const NAV: [string, string][] = [["/#tools", "ツール一覧"], ["#guide", "OGPの基本"], ["#faq", "よくある質問"]];
 const FOOT: { h: string; items: [string, string][] }[] = [
-  { h: "ツール", items: [...HUB.TOOLS.filter((t) => t.status === "live").map((t) => [t.name, "/" + t.slug + "/"] as [string, string]), ["ツール一覧", "/#tools"]] },
+  { h: "ツール", items: [...HUB.TOOLS.filter((t) => t.status === "live").map((t) => [HUB.label(t), "/" + t.slug + "/"] as [string, string]), ["ツール一覧", "/#tools"]] },
   { h: "学ぶ", items: [["こんなときに使えます", "#scenes"], ["OGPの基本", "#guide"], ["OGPタグ辞典", "#glossary"], ["よくある質問", "#faq"]] },
 ];
 
 const STEPS = [
-  { n: "1", t: "URLを入力", d: "チェックしたいページのURLを貼り付けて「無料でチェック」を押すだけ。" },
-  { n: "2", t: "表示を確認", d: "X・Facebook・LINE・Slackなど、各サービスでの見え方をその場でプレビュー。" },
-  { n: "3", t: "コードで直す", d: "改善点とフレームワーク別のコードをコピーして、そのまま貼り付け。" },
+  { n: "1", t: "URLを入力", d: "チェックしたいページのURLを貼り付けて、「無料でチェック」を押します。" },
+  { n: "2", t: "表示を確認", d: "X・Facebook・LINE・Slackなどでの見え方が、その場でプレビューに出ます。" },
+  { n: "3", t: "コードで直す", d: "「直すところ」に出るコードをコピーして、ページの <head>（ページの設定を書く部分）に貼り付けます。" },
 ];
 const GUIDE = D.GUIDE.filter((_, i) => [0, 2].includes(i));
 
 const SCENES = {
-  intro: "OGPは、設定を忘れていても自分のサイトを見ているだけでは気づきにくいところです。SNSやチャットにURLを貼ってから「画像が出ない」「別のページのタイトルになっている」と分かる前に、まとめて確かめられます。",
+  intro: "OGP（シェアされたときの表示の設定）は、抜けていても、自分のサイトを見ているだけでは気づけません。SNSやチャットに貼ってから「画像が出ない」「別のページのタイトルになっている」とあわてないよう、先にまとめて確かめられます。",
   groups: [
     {
       h: "サイトの公開・リニューアル",
       items: [
         ["サイトを公開した直後に、トップや主要ページのシェア表示を見ておきたい", "URLを入れるだけで、6つのサービスでの見え方を並べて確認できます。"],
-        ["リニューアルのあと、古いOGP画像やタイトルが残っていないか心配", "og:url や canonical（正規URLの指定）が古いURLのままになっていないかも読み取ります。"],
+        ["リニューアルのあと、古いOGP画像やタイトルが残っていないか心配", "画像やタイトルに加えて、og:url や canonical（正規URLの指定）に入っているURLも「タグ一覧」で確かめられます。"],
         ["クライアントへの納品前に、metaタグの設定漏れを点検したい", "足りないタグは「直すところ」に、「必ず直す／直すと良い／余裕があれば」の順で並びます。"],
-        ["Next.js や Astro など、使っている仕組みに合わせた書き方が知りたい", "HTML・Next.js・Nuxt・Astro などの書き方でコードを出すので、コピーして貼り付けられます。"],
+        ["Next.js や Astro など、使っている仕組みに合わせた書き方が知りたい", "「コード」タブで HTML・Next.js・Nuxt・Astro などを選ぶと、その書き方でコードが出ます。コピーしてそのまま貼り付けられます。"],
       ],
     },
     {
@@ -55,15 +55,15 @@ const SCENES = {
         ["キャンペーンページをXで告知する前に、カードの見え方を確かめたい", "画像が大きく出る設定（summary_large_image）になっているかも分かります。"],
         ["お知らせのページをFacebookでシェアしたら、画像が出なかった", "og:image が相対パス（https:// から始まらない書き方）になっているなど、よくある原因を指摘します。"],
         ["LINEで案内を送る前に、リンクのプレビューを見ておきたい", "LINEのトーク画面に近い見た目で、タイトルと画像の出方をプレビューします。"],
-        ["SlackやTeamsで社内に共有するページの表示を整えたい", "チャットツールでの見え方も、SNSと一緒に確認できます。"],
+        ["SlackやTeamsで社内に共有するページの表示を整えたい", "プレビューを「チャットツール」に切り替えると、Slack・Discord・Teamsでの見え方を確かめられます。"],
       ],
     },
     {
       h: "ふだんのサイト運用",
       items: [
         ["ブログ記事ごとに、OGP画像を設定し忘れていないか確かめたい", "記事のURLを入れて、画像とタイトルが記事ごとに変わっているかを見られます。"],
-        ["参考にしたいサイトが、どんなOGPを設定しているか見てみたい", "公開されているページなら、どのURLでも読み取れます。"],
-        ["設定を直したのに、SNSでは古い表示のまま変わらない", "ここで新しい設定が読めていれば、原因はSNS側のキャッシュ（一時保存）です。対処はよくある質問にまとめています。"],
+        ["参考にしたいサイトが、どんなOGPを設定しているか見てみたい", "公開されているページなら、ほかの人のサイトでも読み取れます。"],
+        ["設定を直したのに、SNSでは古い表示のまま変わらない", "ここで新しい設定が読めていれば、原因はSNS側のキャッシュ（一時保存）です。表示を新しくする方法は、このページの「よくある質問」をご覧ください。"],
       ],
     },
   ],
@@ -79,12 +79,12 @@ const related = [
 const relatedLive = related.some((t) => t.status === "live");
 const LOG = HUB.CHANGELOG.filter((u) => u.tool === "ogp");
 
-const ABOUT = [
-  ["しくみ", "入力されたURLのページを取得し、head 内の OGP・Twitterカード・canonical を読み取って採点します。"],
-  ["保存", "入力したURLと結果は保存しません。最近チェックしたURLは、お使いのブラウザ内にだけ残ります。"],
+const ABOUT: [string, string, boolean?][] = [
+  ["しくみ", "入力されたURLのページを運営者のサーバーから読みに行き、<head> の中の OGP・Twitterカード・canonical を読み取って採点します。"],
+  ["保存", "入力したURLとチェック結果は、運営者のサーバーに保存しません。最近チェックしたURLは、お使いのブラウザの中にだけ残ります。"],
   ["対応サービス", "X・Facebook・LINE・Slack・Discord・Microsoft Teams"],
-  ["料金", "無料・登録不要。PC・スマホどちらでも使えます。"],
-  ["免責", "結果の正確さは保証しません。このツールを使って生じた損害について、当社に故意または重大な過失がある場合を除き、責任を負いません。"],
+  ["料金", "無料で、登録も要りません。PC・スマホのどちらでも使えます。"],
+  ["免責", "結果の正確さは保証しません。このツールを使って生じた損害について、当社に故意または重大な過失がある場合を除き、責任を負いません。", true],
 ];
 ---
 <Base
@@ -123,7 +123,7 @@ const ABOUT = [
         </nav>
         <div class="tmeta">
           <span><Icon name="link" size={13} />URLを取得して確認</span>
-          <span><Icon name="check" size={13} />入力内容は保存しません</span>
+          <span><Icon name="check" size={13} />サーバーに保存しません</span>
           <span>最終更新 <time datetime={D.UPDATED}>{D.UPDATED.replace(/-/g, "/")}</time></span>
         </div>
       </div>
@@ -133,7 +133,7 @@ const ABOUT = [
         <div class="wrap hero-in">
           <h1 class="badge"><Icon name="sparkle" size={14} />OGPチェッカー｜SNSのシェア表示とmetaタグを確認する無料ツール</h1>
           <p class="hero-title">シェアする前に、<span class="hl">見え方</span>をたしかめよう。</p>
-          <p class="tz-sub">X・LINE・Slackなど6つのサービスでの表示を確認して、足りないタグのコードまで出します。</p>
+          <p class="tz-sub">X・LINE・Slackなど6つのサービスでの見え方が分かり、足りないタグを補うコードまで出ます。</p>
 
           <form class="checker" data-checker data-clarity-mask="True">
             <div class="checker-field">
@@ -171,7 +171,7 @@ const ABOUT = [
             <p class="re-d">点数・直すところ・6つのサービスでの見え方・修正コードを、まとめて表示します。</p>
           </div>
         </div>
-        <p class="disclaimer"><Icon name="info" size={14} /><span>診断結果は参考情報です。正確さは保証できないため、サイトに反映する前に、ご自身でも確かめてください（くわしくは<a href="/terms/">利用規約</a>）。</span></p>
+        <p class="disclaimer"><Icon name="info" size={14} /><span>診断結果は参考情報です。正確さは保証できないため、サイトに反映する前に、ご自身でも確かめてください。くわしくは<a href="/terms/">利用規約</a>をご覧ください。</span></p>
       </section>
     </div>
 
@@ -211,7 +211,7 @@ const ABOUT = [
               <div class="g-num">{String(i + 1).padStart(2, "0")}</div>
               <div class="g-body">
                 <h3 class="g-h">{b.h}</h3>
-                {b.p && <p class="g-p">{b.p}{b.ref && <>（参考：<a href={b.ref.href} target="_blank" rel="noopener">{b.ref.label}</a>）</>}</p>}
+                {b.p && <p class="g-p">{b.p}{b.ref && <>くわしい仕様は、<a href={b.ref.href} target="_blank" rel="noopener">{b.ref.label}</a>をご覧ください。</>}</p>}
                 {b.list && (
                   <ul class="g-list">
                     {b.list.map((li) => <li><Icon name="check" size={14} style="color:var(--primary)" /><span>{li}</span></li>)}
@@ -221,24 +221,24 @@ const ABOUT = [
             </article>
           ))}
         </div>
-        <p class="more-note">画像サイズ・フレームワーク別の書き方・よくあるつまずきを詳しく解説する記事を準備中です。</p>
+        <p class="more-note">画像サイズやフレームワーク別の書き方、よくあるつまずきをくわしく解説する記事を準備しています。</p>
       </section>
 
       <section class="band">
         <div class="wrap sec">
-          <SectionHead id="glossary" kicker="用語集" title="OGPタグ辞典" sub="タグの意味と書き方を、辞書のように一覧で確認。行をクリックすると記述例が開きます。" />
+          <SectionHead id="glossary" kicker="用語集" title="OGPタグ辞典" sub="タグの意味と書き方を、辞書のように引けます。行を押すと、説明と記述例が開きます。" />
           <Glossary />
         </div>
       </section>
 
       <section class="wrap sec">
-        <SectionHead id="faq" kicker="よくある質問" title="つまずきやすいポイント Q&A" sub="設定でよくある疑問とトラブルへの答えをまとめました。" />
+        <SectionHead id="faq" kicker="よくある質問" title="つまずきやすいところと、その答え" sub="設定でよくある疑問とトラブルへの答えをまとめました。" />
         <Faq items={D.FAQ} cats />
       </section>
 
       <section class="wrap sec sec-tight">
         <SectionHead id="tools" kicker="関連ツール" {...(relatedLive
-          ? { title: "Web制作に関連するツール", sub: "支給されたPDFから画像や原稿を取り出すときはPDFばらし屋で。準備中のツールは、公開しだい使えるようになります。" }
+          ? { title: "Web制作に関連するツール", sub: "支給されたPDFから画像や原稿を取り出すときは、PDFばらし屋が使えます。準備中のツールは、公開しだいここから使えるようになります。" }
           : { title: "これから公開するツール", sub: "公開前のチェックに役立つツールを準備しています。" })} />
         <div class="tools">
           {related.map((t) => {
@@ -267,7 +267,7 @@ const ABOUT = [
           <div>
             <div class="log-h">概要</div>
             <dl>
-              {ABOUT.map(([k, v]) => <div><dt>{k}</dt><dd>{v}</dd></div>)}
+              {ABOUT.map(([k, v, terms]) => <div><dt>{k}</dt><dd>{v}{terms && <>くわしくは<a href="/terms/">利用規約</a>をご覧ください。</>}</dd></div>)}
             </dl>
           </div>
           {HUB.SHOW_UPDATES && (
@@ -285,7 +285,7 @@ const ABOUT = [
       </section>
     </div>
 
-    <Corp desc="OGPやSEOの設定を含むサイト制作から、業務に合わせた専用ツールの開発まで。まとめてお任せいただけます。" />
+    <Corp desc="OGPやSEOの設定を含むサイト制作から、業務に合わせた専用ツールの開発まで、まとめてお任せいただけます。" />
   </main>
 
   <Footer cols={FOOT} />

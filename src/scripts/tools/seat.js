@@ -24,7 +24,7 @@ let result = null; // { people, tables: number[][], shape }
 function decide(scroll = true) {
   const { people, warnings } = pf.read();
   if (people.length < 2) {
-    showMsgs(msgs, [["err", "参加者を2人以上入れてください（1行に1人）。"]]);
+    showMsgs(msgs, [["err", "席を決めるには、2人以上の名前が必要です。参加者の欄に、1行に1人ずつ入れてください。"]]);
     names.focus();
     return;
   }
@@ -32,7 +32,7 @@ function decide(scroll = true) {
   const { rules, warnings: rw } = readRules(people, [["apart", apart]]);
   const { groups, unmet } = arrange(people, sizes, { random: random.checked, rules });
   const notes = [...warnings, ...rw].map((w) => ["warn", w]);
-  if (unmet > 0) notes.push(["warn", `人数の都合で、別の卓にできなかった組み合わせが${unmet}組あります。卓の数をふやすと守りやすくなります。`]);
+  if (unmet > 0) notes.push(["warn", `人数の都合で、別の卓にしたい組み合わせのうち${unmet}組が同じ卓になりました。卓の数を増やすと、別々にしやすくなります。`]);
   showMsgs(msgs, notes);
   result = { people, tables: groups, shape: shape.get() };
   draw(true);
@@ -77,7 +77,7 @@ function draw() {
     <div class="out-head">
       <div>
         <p class="out-t">座席表 <b>${tables.length}</b>卓・${people.length}人</p>
-        <p class="out-d">${result.shape === "round" && !roundTooMany ? "丸テーブル（上から時計回り）" : "長机（左右が向かい合わせ）"}${roundTooMany ? `・丸テーブルは${ROUND_MAX}人までなので長机で表示しています` : ""}</p>
+        <p class="out-d">${result.shape === "round" && !roundTooMany ? "丸テーブルで表示しています。いちばん上の席から時計回りに並んでいます。" : `${roundTooMany ? `丸テーブルで表示できるのは1卓${ROUND_MAX}人までなので、長机で表示しています。` : "長机で表示しています。"}左右の席が向かい合わせです。`}</p>
       </div>
       <div class="acts">
         <button type="button" class="btn btn-primary" data-do="shuffle">${svg("shuffle", 16)}もう一回シャッフル</button>
@@ -96,7 +96,7 @@ function asText() {
   tables.forEach((t, i) => {
     const ns = t.map((k) => people[k].name);
     lines.push("", `■${i + 1}卓（${ns.length}人）`);
-    if (round) lines.push(ns.join(" → ") + "（時計回り）");
+    if (round) lines.push(ns.join(" → ") + "（上の席から時計回り）");
     else for (let r = 0; r < ns.length; r += 2) lines.push(ns[r + 1] ? `${ns[r]} ｜ ${ns[r + 1]}` : ns[r]);
   });
   return lines.join("\n");
@@ -202,7 +202,7 @@ out.addEventListener("click", async (e) => {
   if (d === "copy") copyText(asText(), b);
   if (d === "image") {
     try { download(await toImage(), `座席表_${stamp()}.png`); }
-    catch (err) { showMsgs(msgs, [["err", "画像を作れませんでした。人数が多いときは「結果をコピー」をお使いください。"]]); }
+    catch (err) { showMsgs(msgs, [["err", "座席表を画像にできませんでした。卓や人数が多いと、ブラウザで大きな画像を作りきれないことがあります。もう一度「画像で保存」を押すか、「結果をコピー」で文字として持ち出してください。"]]); }
   }
   if (d === "reset") {
     result = null;

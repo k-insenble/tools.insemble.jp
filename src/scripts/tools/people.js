@@ -31,7 +31,7 @@ export function peopleForm(o) {
       else per.set(Math.max(1, Math.ceil(n / Math.min(groups.get(), n))), false);
       if (groups.get() > n) groups.set(n, false);
     }
-    if (!n) { o.summary.textContent = "参加者を入れると、ここに分け方が出ます"; return; }
+    if (!n) { o.summary.textContent = "参加者を入れると、ここに分け方が出ます。"; return; }
     const s = sizes(n);
     const uniq = [...new Set(s)].sort((a, b) => b - a);
     o.summary.textContent = `${n}人 → ${s.length}${o.unit}（${uniq.map((k) => `${k}人×${s.filter((x) => x === k).length}`).join("・")}）`;
@@ -56,7 +56,7 @@ export function readRules(people, fields) {
     if (!el || !el.value.trim()) continue;
     const { pairs, unknown } = parsePairs(el.value, people);
     if (pairs.length) rules.push({ type, pairs });
-    if (unknown.length) warnings.push(`参加者にいない名前は条件から外しました：${unknown.slice(0, 5).join("、")}${unknown.length > 5 ? " ほか" : ""}`);
+    if (unknown.length) warnings.push(`条件に書いた「${unknown.slice(0, 5).join("」「")}」${unknown.length > 5 ? "ほか" : ""}は、参加者の欄に見つからないため、条件から外しました。参加者の欄と同じ書き方になっているか確かめてください。`);
   }
   return { rules, warnings };
 }

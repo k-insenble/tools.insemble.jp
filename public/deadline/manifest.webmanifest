@@ -2,7 +2,7 @@
   "id": "/deadline/",
   "name": "あと何日？",
   "short_name": "あと何日？",
-  "description": "締切までの残り時間が「日 → 時間 → 分」へ自動で変わる付箋。今日やることも一緒に。",
+  "description": "締切までの残り時間を数え続け、近づくと色と言葉で知らせます。今日やることも一緒に書いておけます。",
   "lang": "ja",
   "start_url": "/deadline/",
   "scope": "/deadline/",

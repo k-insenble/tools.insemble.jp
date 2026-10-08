@@ -20,7 +20,7 @@ function scoreRing(value) {
     ? ["oklch(0.78 0.14 75)", "oklch(0.68 0.14 60)"]
     : ["oklch(0.68 0.19 32)", "oklch(0.56 0.19 22)"];
   const gid = "grad" + value;
-  return `<div role="img" aria-label="スコア ${value} / 100" style="position:relative;width:92px;height:92px;flex-shrink:0;animation:pop .6s cubic-bezier(.2,.8,.3,1.2) both">
+  return `<div role="img" aria-label="スコア 100点中${value}点" style="position:relative;width:92px;height:92px;flex-shrink:0;animation:pop .6s cubic-bezier(.2,.8,.3,1.2) both">
     <svg width="92" height="92" style="transform:rotate(-90deg);overflow:visible" aria-hidden="true">
       <defs><linearGradient id="${gid}" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="${stops[0]}"/><stop offset="100%" stop-color="${stops[1]}"/></linearGradient></defs>
       <circle cx="46" cy="46" r="${R}" fill="none" stroke="var(--line)" stroke-width="8"/>
@@ -74,7 +74,7 @@ function ogpImage(d) {
 }
 /* 画像が読み込めなかったとき（個人版から） */
 function onImgError(img) {
-  img.outerHTML = `<div style="${IMG_BOX};background:var(--paper)">画像を読み込めませんでした</div>`;
+  img.outerHTML = `<div style="${IMG_BOX};background:var(--paper)">この画面では画像を読み込めませんでした</div>`;
 }
 
 /* --- プラットフォーム別プレビュー --- */
@@ -118,14 +118,14 @@ function tagsTab(d) {
     <code class="tag-key"><span aria-hidden="true" style="width:7px;height:7px;border-radius:99px;background:${DOT[t.state] || DOT.info};flex-shrink:0"></span>${esc(t.key)}</code>
     <div class="tag-val${t.value === "未設定" ? " empty" : ""}">${esc(t.value)}</div>
   </div>`).join("");
-  return `<p class="hint">取得したタグの値と、設定の状態を一覧で確認できます。</p><div class="tag-table">${rows}</div>`;
+  return `<p class="hint">ページから読み取ったタグの値と、設定の状態の一覧です。</p><div class="tag-table">${rows}</div>`;
 }
 
 /* --- 直すところ --- */
 const LEVEL = {
-  err: { bg: "var(--err-bg)", fg: "var(--err)", label: "必ず直す", icon: "warn", tip: "直さないと、シェアしたときに画像やタイトルが出ないなど、見え方がはっきり崩れます。" },
-  warn: { bg: "var(--warn-bg)", fg: "var(--warn-ink)", label: "直すと良い", icon: "warn", tip: "今も表示はされますが、SNSによって文字が切れたり、見え方がばらついたりします。" },
-  info: { bg: "var(--info-bg)", fg: "var(--info)", label: "余裕があれば", icon: "info", tip: "直さなくても見え方はほぼ変わりません。より確実に表示させたいときの設定です。" },
+  err: { bg: "var(--err-bg)", fg: "var(--err)", label: "必ず直す", icon: "warn", tip: "このままだと、シェアしたときに画像やタイトルが出ないなど、見え方がはっきり崩れます。" },
+  warn: { bg: "var(--warn-bg)", fg: "var(--warn-ink)", label: "直すと良い", icon: "warn", tip: "いまも表示はされますが、SNSによっては文字が切れたり、見え方がそろわなかったりします。" },
+  info: { bg: "var(--info-bg)", fg: "var(--info)", label: "余裕があれば", icon: "info", tip: "いまの見え方はほぼそのままです。より確実に表示させたいときに足す設定です。" },
 };
 const ORDER = { err: 0, warn: 1, info: 2 };
 const sortedIssues = (d) => [...d.issues].sort((a, b) => ORDER[a.level] - ORDER[b.level]);
@@ -134,7 +134,7 @@ function issuesTab(d) {
     return `<div class="empty-good">
       <div style="width:46px;height:46px;border-radius:99px;background:var(--ok-bg);color:var(--ok);display:grid;place-items:center;margin:0 auto 12px">${svg("check", 26)}</div>
       <div style="font-weight:700;font-family:var(--font-display);font-size:17px;color:var(--ink)">直すところはありません</div>
-      <p style="color:var(--muted);font-size:13.5px;margin-top:6px">主要なOGPタグが過不足なく設定されています。プレビューで見え方も確認しておきましょう。</p>
+      <p style="color:var(--muted);font-size:13.5px;margin-top:6px">主要なOGPタグは、すべてそろっています。「プレビュー」のタブで、各サービスでの見え方も確かめておくと安心です。</p>
     </div>`;
   }
   const list = sortedIssues(d);
@@ -155,19 +155,19 @@ function issuesTab(d) {
   return `<div class="fix-head">
       <div>
         <div class="fix-t">直すところ <b>${list.length}</b>件</div>
-        <p class="fix-d">「必ず直す」から順に直すのがおすすめです。コードを <code>&lt;head&gt;</code> 内に貼り付けてください。ラベルにカーソルを合わせる（スマホはタップ）と、意味が出ます。</p>
+        <p class="fix-d">「必ず直す」から順に直すのがおすすめです。コードは、ページの <code>&lt;head&gt;</code> の中に貼り付けます。同じタグがすでにあるときは、そのタグをコードに置き換えてください。ラベルの意味は、カーソルを合わせるか、スマホではタップすると出ます。</p>
       </div>
       ${copyBtn(list.map((i) => i.code).join("\n"), "修正コードをまとめてコピー", "solid")}
     </div>
     <ol class="fix-list">${items}</ol>
-    <p class="fix-more">Next.js や WordPress などを使っている場合は、<button type="button" data-tab="code">コード</button>のタブで書き方を切り替えられます。</p>`;
+    <p class="fix-more">Next.js や Astro などを使っているときは、<button type="button" data-tab="code">「コード」のタブ</button>で書き方を切り替えられます。</p>`;
 }
 
 /* --- フレームワーク別コード --- */
 function codeTab(d, s) {
   const code = frameworkCode(s.fw, d);
   const chips = FRAMEWORKS.map((f) => `<button type="button" class="chip${s.fw === f ? " on" : ""}" data-fw="${f}" aria-pressed="${s.fw === f}">${f}</button>`).join("");
-  return `<p class="hint">使っているフレームワークを選ぶと、コピーして使えるコードが生成されます。</p>
+  return `<p class="hint">サイトを作っている仕組み（フレームワーク）を選ぶと、その書き方でOGPタグひとそろいのコードが出ます。</p>
     <div class="chips" style="margin-bottom:14px">${chips}</div>
     <div class="editor">
       <div class="editor-bar">
@@ -192,7 +192,7 @@ function shareBar(d) {
   ];
   const btns = targets.map((t) => `<a class="share-btn" href="${esc(t.href)}" target="_blank" rel="noopener noreferrer" style="--b:${t.color}"><span class="share-glyph" aria-hidden="true" style="background:${t.color}">${t.glyph}</span>${t.name}</a>`).join("");
   const native = navigator.share
-    ? `<button type="button" class="share-btn ghost" data-share="${esc(link)}" data-text="${esc(text)}"><span class="share-glyph ghost">${svg("arrow", 15)}</span>その他で共有</button>`
+    ? `<button type="button" class="share-btn ghost" data-share="${esc(link)}" data-text="${esc(text)}"><span class="share-glyph ghost">${svg("arrow", 15)}</span>ほかのアプリで共有</button>`
     : "";
   return `<div class="share reveal">
     <div class="share-deco" aria-hidden="true">
@@ -204,7 +204,7 @@ function shareBar(d) {
       <div class="share-emoji" aria-hidden="true">📣</div>
       <div>
         <h2 class="share-h">この結果をシェアしよう</h2>
-        <p class="share-sub">スコアやプレビューを、SNSやLINEでそのままシェア。<br class="dt">このツールを友だちに教えるのにも使えます。</p>
+        <p class="share-sub">いまチェックしたURLの結果を開けるリンクを、SNSやLINEで送れます。<br class="dt">チームでの確認や、このツールを紹介するときにお使いください。</p>
       </div>
     </div>
     <div class="share-actions">

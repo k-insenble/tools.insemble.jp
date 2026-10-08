@@ -21,9 +21,10 @@ function init() {
     mini: $("#an-mini"), mtoday: $(".an-mtoday"), mlist: $("#an-mlist"), mempty: $("#an-mempty"), mcount: $("#an-mcount"), mnext: $("#an-mnext"),
     full: $("#an-full"), dlN: $("#an-dl-n"), open: $("#an-open"), samples: $("#an-samples"), clearSamples: $("#an-clear-samples"),
     backup: $("#an-backup"), backupT: $("#an-backup-t"), backupNo: $("#an-backup-no"), backupYes: $("#an-backup-yes"),
+    place: $("#an-place"), placeT: $("#an-place-t"), placeNo: $("#an-place-no"), placeYes: $("#an-place-yes"),
     composer: $("#an-composer"), cmodeT: $("#an-cmode-t"), mode: $("#an-mode"), one: $("#an-one"), bulk: $("#an-bulk"),
     title: $("#an-title"), dchips: $("#an-dchips"), date: $("#an-date"), tchips: $("#an-tchips"), time: $("#an-time"),
-    eg: $("#an-eg"), bulkIn: $("#an-bulk-in"), bres: $("#an-bres"), preview: $("#an-preview"), cancel: $("#an-cancel"), submit: $("#an-submit"),
+    kj: $("#an-kj"), eg: $("#an-eg"), bulkIn: $("#an-bulk-in"), bres: $("#an-bres"), preview: $("#an-preview"), cancel: $("#an-cancel"), submit: $("#an-submit"),
     cards: $("#an-cards"), empty: $("#an-empty"), first: $("#an-first"),
     done: $("#an-done"), dtoggle: $("#an-dtoggle"), dn: $("#an-dn"), dlist: $("#an-dlist"),
     todayBtn: $("#an-today-btn"), tdate: $("#an-tdate"), tcount: $("#an-tcount"), tbody: $("#an-tbody"), tbar: $("#an-tbar"),
@@ -33,6 +34,12 @@ function init() {
   const motion = !reduceMotion();
   const standalone = () => window.matchMedia?.("(display-mode: standalone)").matches || navigator.standalone === true;
   if (standalone()) document.documentElement.classList.add("an-app");
+  // アプリとしての置き方を、ブラウザごとに分ける（下の「アプリとして置く」で使う）
+  const ua = navigator.userAgent;
+  const isIOS = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1); // iPadOS は Mac と名乗る
+  const isMacSafari = !isIOS && /Macintosh/.test(ua) && /Safari\//.test(ua) && !/Chrome|Chromium|Edg|Firefox|OPR/.test(ua);
+  const isAndroid = /Android/.test(ua);
+  const isChromium = !isIOS && !isAndroid && /Chrome\/|Edg\//.test(ua); // パソコンの Chrome・Edge など
   const baseTitle = document.title;
   // タブ名は残り時間で変わるので、アクセス解析（GA）にはページ本来のタイトルだけを送る
   window.gtag?.("set", { page_title: baseTitle });
@@ -59,7 +66,7 @@ function init() {
   const stored = load();
   let data = stored ? tidy(normalize(stored, t0), t0) : { ...normalize(null, t0), ...samples(t0) };
   if (!stored) data.ui.mini = standalone(); // アプリとして開いた初回はミニから
-  const ui = { composer: false, mode: "one", dDate: "", dTime: "23:59", showDone: false, noticeOff: "", fresh: null, fx: new Set(), bip: null, lastDay: ymd(t0) };
+  const ui = { composer: false, mode: "one", dDate: "", dTime: "23:59", showDone: false, noticeOff: "", fresh: null, fx: new Set(), bip: null, placeGuide: false, lastDay: ymd(t0) };
 
   /* ---------- 小さな道具 ---------- */
   const h = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
@@ -129,8 +136,8 @@ function init() {
     const t = c.d.title;
     n.querySelector('[data-r="title"]').textContent = t;
     n.querySelector('[data-a="done"]').setAttribute("aria-label", `「${t}」を完了にする`);
-    n.querySelector('[data-a="fx"]').setAttribute("aria-label", `「${t}」の期限をExcel・スプレッドシートで計算する関数`);
-    n.querySelector('[data-a="del"]').setAttribute("aria-label", `「${t}」を削除`);
+    n.querySelector('[data-a="fx"]').setAttribute("aria-label", `「${t}」の残り日数をExcel・スプレッドシートで計算する関数を表示`);
+    n.querySelector('[data-a="del"]').setAttribute("aria-label", `「${t}」を削除する`);
     n.querySelector('[data-a="del"]').title = "削除";
     if (ui.fresh === c.d.id) replay(n, "is-in");
     return n;
@@ -230,7 +237,7 @@ function init() {
       el.dlist.replaceChildren(...doneArr.map((d) => {
         const li = h("li");
         const s = h("span", "an-sumi", "済"); s.setAttribute("aria-hidden", "true");
-        const b = h("button", null, "戻す"); b.type = "button"; b.dataset.id = d.id; b.setAttribute("aria-label", `「${d.title}」を戻す`);
+        const b = h("button", null, "戻す"); b.type = "button"; b.dataset.id = d.id; b.setAttribute("aria-label", `「${d.title}」を未完了に戻す`);
         li.append(s, h("span", "an-dt", d.title), h("small", null, md(d.doneAt) + " 完了"), b);
         return li;
       }));
@@ -239,6 +246,7 @@ function init() {
     const ownN = own().length;
     el.backup.hidden = !(canStore && !data.ui.backupAsked && ownN >= 5);
     if (!el.backup.hidden) setText(el.backupT, `締切が${ownN}件になりました。`);
+    renderPlace(ownN);
     renderNotice(); renderMini(); renderTitle();
   }
   function renderNotice() {
@@ -285,7 +293,7 @@ function init() {
     data.deadlines = data.deadlines.map((d) => (d.id === b.dataset.id ? { ...d, done: false, doneAt: 0 } : d));
     persist(); renderAll();
   });
-  el.clearSamples.addEventListener("click", () => { const prev = dropSamples(); if (prev) { persist(); renderAll(); toast("サンプルを片付けました", prev); } });
+  el.clearSamples.addEventListener("click", () => { const prev = dropSamples(); if (prev) { persist(); renderAll(); toast("サンプルを片づけました", prev); } });
 
   /* ---------- 締切を追加 ---------- */
   const DCHIPS = () => {
@@ -326,7 +334,7 @@ function init() {
       const r = parseBulk(el.bulkIn.value, now);
       el.bres.replaceChildren();
       if (r.ok.length) el.bres.append(h("b", null, `${r.ok.length}件を追加できます。`));
-      if (r.bad.length) el.bres.append(h("span", "is-bad", ` ${r.bad.slice(0, 3).map((b) => b.line + "行目").join("・")}${r.bad.length > 3 ? " ほか" : ""}は日付が読めませんでした。`));
+      if (r.bad.length) el.bres.append(h("span", "is-bad", ` ${r.bad.slice(0, 3).map((b) => b.line + "行目").join("・")}${r.bad.length > 3 ? "ほか" : ""}は読み取れないため、追加されません。タスク名と期限（例：10月10日）を1行に並べてください。`));
       text = r.ok.length ? `${r.ok.length}件` : "貼り付けてください"; cls = r.ok.length ? "" : "is-mute"; ok = r.ok.length > 0;
     } else {
       const due = dueAt(ui.dDate, ui.dTime);
@@ -334,6 +342,8 @@ function init() {
       else if (due < now) { text = "その日時は過ぎています"; cls = "is-past"; }
       else text = "あと " + ptext(parts(due - now).p);
       ok = !!due && !!el.title.value.trim();
+      // 1か月以上先なら、メールで知らせる「きじかん」を1行だけ案内（きじかんが扱える1年先まで）
+      el.kj.hidden = !(due && due - now >= 30 * DAY && due - now <= 365 * DAY);
     }
     setText(el.preview, text); el.preview.className = cls;
     el.submit.setAttribute("aria-disabled", String(!ok));
@@ -357,7 +367,7 @@ function init() {
     persist(); renderComposer(); renderAll();
     ui.fresh = null;
     if (made.length > 1) toast(`${made.length}件の締切を追加しました`, prev || snapWithout(made));
-    else if (prev) toast("サンプルを片付けました", prev);
+    else if (prev) toast("サンプルを片づけました", prev);
     el.open.focus();
   }
   const snapWithout = (made) => { const ids = new Set(made.map((m) => m.id)); return { tasks: [...data.tasks], deadlines: data.deadlines.filter((d) => !ids.has(d.id)) }; };
@@ -388,15 +398,16 @@ function init() {
   el.date.addEventListener("change", () => { ui.dDate = el.date.value; renderComposer(); });
   el.time.addEventListener("change", () => { ui.dTime = el.time.value || "23:59"; renderComposer(); });
   el.bulkIn.addEventListener("input", () => renderPreview());
-  el.mode.addEventListener("click", () => {
-    ui.mode = ui.mode === "bulk" ? "one" : "bulk";
+  el.mode.addEventListener("click", () => setMode(ui.mode === "bulk" ? "one" : "bulk"));
+  function setMode(mode) {
+    ui.mode = mode;
     if (ui.mode === "bulk") {
       const y = new Date().getFullYear(), m = new Date().getMonth() + 1, d2 = (n) => `${y}-${pad2(m)}-${pad2(n)}`;
       el.eg.textContent = `サイト公開\t${d2(28)}\n原稿確認\t${d2(20)} 18:00\n見積提出, 10月31日`;
     }
     renderComposer();
     (ui.mode === "bulk" ? el.bulkIn : el.title).focus();
-  });
+  }
 
   /* ---------- 今日やること ---------- */
   const taskEls = new Map();
@@ -411,7 +422,7 @@ function init() {
       li.innerHTML = `<button type="button" class="an-chk">${ICON.tick}</button><span class="an-tx"><span></span><i></i></span><span class="an-tag" hidden></span><button type="button" class="an-x" title="削除">${ICON.x}</button>`;
       li.querySelector(".an-tx span").textContent = t.text;
       li.querySelector(".an-chk").setAttribute("aria-label", `「${t.text}」を完了にする`);
-      li.querySelector(".an-x").setAttribute("aria-label", `「${t.text}」を削除`);
+      li.querySelector(".an-x").setAttribute("aria-label", `「${t.text}」を削除する`);
       if (ui.fresh === t.id) replay(li, "is-in");
       return li;
     }, (li, { t }) => {
@@ -443,7 +454,7 @@ function init() {
     data.tasks = [t, ...data.tasks];
     el.task.value = "";
     ui.fresh = t.id; persist(); renderAll(); ui.fresh = null;
-    if (prev) toast("サンプルを片付けました", prev);
+    if (prev) toast("サンプルを片づけました", prev);
   }
   el.task.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.isComposing) { e.preventDefault(); addTask(); } });
   el.tasks.addEventListener("click", (e) => {
@@ -465,15 +476,15 @@ function init() {
   /* ---------- 書き出し ---------- */
   el.tsv.addEventListener("click", async () => {
     const list = own().filter((d) => !d.done).sort((a, b) => a.dueDate - b.dueDate);
-    if (!list.length) return toast(hasSamples() ? "まだ自分の締切がありません（サンプルはコピーしません）" : "コピーする締切がありません");
+    if (!list.length) return toast(hasSamples() ? "自分の締切を追加すると、コピーできます" : "締切を追加すると、ここからコピーできます");
     const ok = await copyText(toTsv(list), null);
-    toast(ok === false ? "コピーできませんでした。ブラウザの設定をご確認ください" : `${list.length}件をコピーしました。Notion・Excelに貼り付けできます`);
+    toast(ok === false ? "コピーできませんでした。「Excelに書き出す」なら、ファイルで持ち出せます" : `${list.length}件をコピーしました。Notion・Excelに貼れます`);
   });
   function exportCsv() {
     const list = own();
-    if (!list.length) return toast("書き出す締切がありません");
+    if (!list.length) return toast("締切を追加すると、書き出せます");
     download(new Blob([toCsv(list)], { type: "text/csv" }), `締切一覧_${ymd(Date.now())}.csv`);
-    toast("Excel用に書き出しました（開くたび残り日数が更新されます）");
+    toast("書き出しました。開くたびに残り日数が更新されます");
   }
   el.csv.addEventListener("click", exportCsv);
   el.backupYes.addEventListener("click", () => { data.ui.backupAsked = true; persist(); exportCsv(); renderDeadlines(); });
@@ -511,7 +522,7 @@ function init() {
     } catch (e) {} // 大きさを変えられないブラウザでは何もしない
   }
   function renderStoreNote() {
-    setText(el.store, canStore ? "データはこのブラウザの中だけに保存されます" : "このブラウザでは保存できないため、ページを閉じると消えます");
+    setText(el.store, canStore ? "データはこのブラウザの中だけに保存されます" : "このブラウザでは保存できないため、ページを閉じると内容が消えます。残したい締切は「Excelに書き出す」で保存してください");
   }
 
   /* ---------- 時計と、時間の経過（タイマーは1つ） ---------- */
@@ -551,15 +562,60 @@ function init() {
   });
   document.addEventListener("visibilitychange", () => { if (!document.hidden) tick(); });
 
-  /* ---------- アプリとして置く（PWA） ---------- */
-  window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); ui.bip = e; el.install.hidden = standalone(); });
-  window.addEventListener("appinstalled", () => { ui.bip = null; el.install.hidden = true; });
-  el.install.addEventListener("click", async () => {
-    const e = ui.bip; if (!e) return;
-    e.prompt();
-    try { await e.userChoice; } catch (x) {}
-    ui.bip = null; el.install.hidden = true;
-  });
+  /* ---------- アプリとして置く（PWA） ----------
+     Chrome・Edge はインストールの確認をそのまま出す。確認を出せないブラウザ（iPhone・iPad、Mac の Safari、
+     Android のほかのブラウザ）は、置き方を案内する。Firefox のパソコン版は置けないので、ボタンごと出さない
+     自分の締切が2件になったら一度だけ「置けます」と声をかける（バックアップの声かけと重なるときは、そちらを先に） */
+  const HOWTO = {
+    ios: "画面の共有ボタン（四角に上向きの矢印）を押して、「ホーム画面に追加」を選んでください。",
+    mac: "メニューバーの「ファイル」から「Dockに追加」を選んでください。macOS 14 以降の Safari で置けます。置いたあとは、Dock からアプリのように開けます。",
+    android: "ブラウザのメニュー（︙）を開いて、「ホーム画面に追加」または「アプリをインストール」を選んでください。",
+    chrome: "アドレスバーの右端にあるインストールのボタン（画面に下向き矢印のマーク）を押すか、メニュー（︙）の「キャスト、保存、共有」から「ページをアプリとしてインストール」を選んでください。すでに置いてあるときは、パソコンのアプリ一覧から開けます。",
+    edge: "アドレスバーの右端にあるアプリのボタンを押すか、メニュー（…）の「アプリ」から「このサイトをアプリとしてインストール」を選んでください。すでに置いてあるときは、パソコンのアプリ一覧から開けます。",
+  };
+  function placeWay() {
+    if (standalone()) return null;
+    if (ui.bip) return "prompt";
+    return isIOS ? "ios" : isMacSafari ? "mac" : isAndroid ? "android" : isChromium ? (/Edg\//.test(ua) ? "edge" : "chrome") : null;
+  }
+  function renderPlace(ownN = own().length) {
+    const way = placeWay();
+    el.install.hidden = !way;
+    const guide = ui.placeGuide && way && way !== "prompt";
+    const offer = !data.ui.placeAsked && ownN >= 2 && el.backup.hidden;
+    el.place.hidden = !(way && (guide || offer));
+    if (el.place.hidden) return;
+    const phone = isIOS || isAndroid;
+    el.placeT.replaceChildren(...(guide
+      ? [h("b", null, phone ? "ホーム画面への置き方：" : way === "mac" ? "Dock への置き方：" : "アプリとしての置き方："), HOWTO[way]]
+      : [h("b", null, phone ? "この付箋は、ホーム画面に置けます。" : "この付箋は、画面の隅に置いておけます。"),
+        phone ? "アプリのようにすぐ開けて、ネットにつながっていなくても使えます。" : "アプリとして置くと、ブラウザを開かなくても残り時間が目に入ります。"]));
+    setText(el.placeNo, guide ? "閉じる" : "今はいい");
+    el.placeYes.hidden = guide;
+    setText(el.placeYes, way === "prompt" ? "置く" : "置き方を見る");
+  }
+  async function place() {
+    data.ui.placeAsked = true; persist();
+    const e = ui.bip;
+    if (e) {
+      ui.bip = null;
+      e.prompt();
+      try { await e.userChoice; } catch (x) {}
+    } else ui.placeGuide = true;
+    renderPlace();
+  }
+  window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); ui.bip = e; renderPlace(); });
+  window.addEventListener("appinstalled", () => { ui.bip = null; renderPlace(); });
+  // ヘッダーのボタンと、読みもの（使い方・FAQ）の「アプリとして置く」から
+  async function placeNow(scroll = true) {
+    if (!placeWay()) { toast(standalone() ? "すでにアプリとして開いています" : "Chrome・Edge・Safariで開くと、アプリとして置けます"); return; }
+    if (data.ui.mini) setMini(false); // 置き方の案内は本体の欄に出す
+    await place();
+    if (scroll && !el.place.hidden) { el.place.scrollIntoView?.({ block: "nearest", behavior: motion ? "smooth" : "auto" }); el.placeNo.focus({ preventScroll: true }); }
+  }
+  el.install.addEventListener("click", () => placeNow());
+  el.placeYes.addEventListener("click", place);
+  el.placeNo.addEventListener("click", () => { data.ui.placeAsked = true; ui.placeGuide = false; persist(); renderPlace(); });
   if ("serviceWorker" in navigator && import.meta.env.PROD) {
     navigator.serviceWorker.register("/deadline/sw.js", { scope: "/deadline/" }).catch(() => {});
   }
@@ -571,7 +627,23 @@ function init() {
     el.task.focus({ preventScroll: true });
     el.task.scrollIntoView?.({ block: "nearest" });
   }
-  const runAction = (kind) => { if (kind === "add") openComposer(); else if (kind === "today") openToday(); };
+  const runAction = (kind) => {
+    if (kind === "add") openComposer();
+    else if (kind === "bulk") { openComposer(); setMode("bulk"); }
+    else if (kind === "today") openToday();
+    else if (kind === "place") placeNow();
+  };
+  // 読みもの（使い方・FAQ）の操作リンク（ToolPage の cta）：その操作を始めて、操作する場所を画面の真ん中へ
+  // （スクロールはここで1回だけ。各操作の中のスクロールと重ねると、なめらかなスクロール同士で打ち消し合う）
+  document.addEventListener("click", async (e) => {
+    const a = e.target.closest?.("[data-tool-do]");
+    if (!a || e.button || e.metaKey || e.ctrlKey || e.shiftKey) return;
+    e.preventDefault();
+    const kind = a.dataset.toolDo;
+    if (kind === "place") await placeNow(false); else runAction(kind);
+    const target = kind === "place" ? (el.place.hidden ? root : el.place) : kind === "today" ? el.tbody.closest(".an-today") : kind === "bulk" ? el.bulkIn : el.composer;
+    target.scrollIntoView({ block: "center", behavior: motion ? "smooth" : "instant" }); // auto だと html の scroll-behavior:smooth が効いてしまう
+  });
 
   renderStoreNote();
   renderAll();

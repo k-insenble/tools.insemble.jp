@@ -104,6 +104,7 @@ code,pre{font-family:var(--font-mono)}
 .badge svg{color:var(--primary)}
 .hero-title{font-family:var(--font-display);font-weight:800;font-size:clamp(30px,5.4vw,50px);line-height:1.28;letter-spacing:-.01em;margin:var(--g-md) 0 0;text-wrap:balance}
 .hero-title .hl{color:var(--primary);position:relative;white-space:nowrap}
+.hero-title .hero-a{display:inline-block} /* 狭い画面で「を、」などが次の行の頭に残らないよう、前半はまとめて折り返す（ToolPage の lead[0]） */
 .hero-title .hl::after{content:"";position:absolute;left:-2px;right:-2px;bottom:6px;height:28%;background:oklch(0.88 0.05 198);z-index:-1;border-radius:4px;transform:skewX(-3deg)}
 .hero-sub{max-width:600px;color:var(--muted);font-size:15.5px;line-height:1.75;margin:var(--g-sm) 0 0;text-wrap:pretty}
 .points{list-style:none;display:flex;flex-wrap:wrap;justify-content:center;gap:8px 20px;margin-top:var(--g-sm);font-size:13px;font-weight:700;color:var(--ink-2)}
@@ -353,6 +354,10 @@ code,pre{font-family:var(--font-mono)}
 .q-chev{color:var(--muted);transition:transform .25s}.q.open .q-chev{transform:rotate(180deg)}
 .g-chev{color:var(--muted);transition:transform .2s}.g-row.open .g-chev{transform:rotate(180deg)}
 .q-a{padding:0 4px 20px 34px;font-size:14px;color:var(--ink-2);line-height:1.9}
+/* 答え・手順の下の「ツールを操作するリンク」（ToolPage の cta） */
+.q-cta{margin:-10px 0 20px 34px}
+.q:not(.open) .q-cta{visibility:hidden} /* 閉じた答えの中のリンクに Tab で入らないように */
+.step-cta{margin-top:var(--g-xs)}
 @media(max-width:560px){.q-cat{display:none}}
 
 /* ---------- 関連ツール（罫線リスト・箱なし） ---------- */
@@ -471,7 +476,7 @@ code,pre{font-family:var(--font-mono)}
 .more-note{margin-top:var(--g-md);font-size:13.5px;color:var(--muted)}
 .disclaimer{display:flex;gap:8px;align-items:flex-start;margin-top:var(--g-sm);font-size:12.5px;line-height:1.8;color:var(--muted);text-wrap:pretty}
 .disclaimer svg{margin-top:4px;color:var(--muted)}
-.disclaimer a{color:var(--primary-ink);text-decoration:underline;text-underline-offset:3px}
+.disclaimer a,.about dd a{color:var(--primary-ink);text-decoration:underline;text-underline-offset:3px}
 .art a:hover{background:var(--paper)}
 .art-cat{font-size:12px;font-weight:700;color:var(--primary-ink)}
 .art-t{font-family:var(--font-display);font-weight:700;font-size:15.5px;line-height:1.55}

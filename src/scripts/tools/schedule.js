@@ -36,6 +36,7 @@ const el = {
   csv: $("#sch-csv"),
   reset: $("#sch-reset"),
   saved: $("#sch-saved"),
+  resetAll: $("#sch-reset-all"),
 };
 
 const tpl = picker($("#sch-tpl"), (v) => { el.tplDesc.textContent = getTemplate(v).desc; save(); preview(); });
@@ -92,8 +93,8 @@ function rowHtml(r, i) {
     <span class="sch-n" aria-hidden="true"></span>
     ${FIELDS.map(f).join("")}
     <span class="sch-ctl">
-      <button type="button" class="icon-btn" data-do="up" aria-label="${i + 1}行目を上へ" ${i === 0 ? "disabled" : ""}>${svg("up", 17)}</button>
-      <button type="button" class="icon-btn" data-do="down" aria-label="${i + 1}行目を下へ" ${i === rows.length - 1 ? "disabled" : ""}>${svg("down", 17)}</button>
+      <button type="button" class="icon-btn" data-do="up" aria-label="${i + 1}行目を上へ移動" ${i === 0 ? "disabled" : ""}>${svg("up", 17)}</button>
+      <button type="button" class="icon-btn" data-do="down" aria-label="${i + 1}行目を下へ移動" ${i === rows.length - 1 ? "disabled" : ""}>${svg("down", 17)}</button>
       <button type="button" class="icon-btn" data-do="dup" aria-label="${i + 1}行目を複製">${svg("dup", 16)}</button>
       <button type="button" class="icon-btn del" data-do="del" aria-label="${i + 1}行目を削除">${svg("trash", 16)}</button>
     </span>
@@ -118,7 +119,7 @@ function drawRows(focus) {
 }
 
 function add(after) {
-  if (rows.length >= MAX_ROWS) return showMsgs(el.msgs, [["warn", `${MAX_ROWS}行までです。`]]);
+  if (rows.length >= MAX_ROWS) return showMsgs(el.msgs, [["warn", `予定は${MAX_ROWS}行まで入れられます。使わない行を削除するか、表を分けて作ってください。`]]);
   const prev = after ?? rows[rows.length - 1];
   // 前の行の日付と終了時刻を引き継ぐ（続けて入れやすいように）
   const r = { ...blank(), date: prev?.date || today(), start: prev?.end || "" };
@@ -202,10 +203,11 @@ function toTime(s) {
 }
 el.pasteGo.addEventListener("click", () => {
   const lines = el.paste.value.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-  if (!lines.length) return showMsgs(el.msgs, [["warn", "貼り付ける内容を入れてください。"]]);
+  if (!lines.length) return showMsgs(el.msgs, [["warn", "貼り付ける欄が空です。予定を1行に1件ずつ貼り付けてから、「行に追加する」を押してください。"]]);
   let added = 0;
+  const unread = [], over = []; // 読み取れなかった行・上限で入らなかった行（欄に残して、直してもう一度押せるようにする）
   for (const line of lines) {
-    if (rows.length >= MAX_ROWS) break;
+    if (rows.length >= MAX_ROWS) { over.push(line); continue; }
     let parts = line.split("\t");
     if (parts.length < 2) parts = line.split(/\s*[,，]\s*/);
     // 「10:00〜11:00」のように、1つの欄に開始と終了が入っていたら分ける
@@ -220,15 +222,19 @@ el.pasteGo.addEventListener("click", () => {
     if (en) { r.end = en; k++; }
     [r.title, r.who, r.note] = [parts[k] ?? "", parts[k + 1] ?? "", parts.slice(k + 2).join(" ")].map((v) => v.trim());
     if (!r.date && rows.length) r.date = rows[rows.length - 1].date;
-    if (isEmpty(r)) continue;
+    if (isEmpty(r)) { unread.push(line); continue; }
     Object.assign(r, clean(r), { id: r.id });
     rows.push(r);
     added++;
   }
-  el.paste.value = "";
+  el.paste.value = [...unread, ...over].join("\n");
   drawRows();
   save();
-  showMsgs(el.msgs, added ? [["ok", `${added}件を追加しました。内容をたしかめてください。`]] : [["warn", "読み取れる行がありませんでした。"]]);
+  const msgs = [];
+  if (added) msgs.push(["ok", `${added}件を追加しました。日付や時刻が正しい欄に入っているか、確かめてください。`]);
+  if (unread.length) msgs.push(["warn", `${added ? `${unread.length}行は` : ""}予定として読み取れませんでした。日付のほかに、時刻か内容が入っているか確かめてください。読み取れなかった行は、貼り付ける欄に残しています。`]);
+  if (over.length) msgs.push(["warn", `予定は${MAX_ROWS}行まで入れられるため、${over.length}行は追加していません。使わない行を削除するか、表を分けて作ってください。追加していない行は、貼り付ける欄に残しています。`]);
+  showMsgs(el.msgs, msgs);
 });
 
 /* ---------- プレビュー（Excelと同じ sheet model から描く） ---------- */
@@ -248,7 +254,7 @@ function entries() {
   return rows.filter((r) => !isEmpty(r)).map(({ id, ...r }) => ({ ...r, title: r.title.trim(), who: r.who.trim(), note: r.note.trim() }));
 }
 const docTitle = () => el.title.value.trim() || "スケジュール";
-const note = () => { const d = new Date(); return `作成 ${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`; };
+const note = () => { const d = new Date(); return `作成日：${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`; };
 function model() {
   return getTemplate(tpl.get()).build(entries(), { title: docTitle(), note: note() });
 }
@@ -257,7 +263,7 @@ function preview() {
   const list = entries();
   el.prevWrap.hidden = list.length === 0;
   el.saved.hidden = list.length === 0 && !el.title.value;
-  const warns = rows.map((r, i) => (r.start && r.end && r.end < r.start ? `${i + 1}行目：終了が開始より前になっています。` : null)).filter(Boolean);
+  const warns = rows.map((r, i) => (r.start && r.end && r.end < r.start ? `${i + 1}行目は、終了の時刻が開始より前になっています。時刻を確かめてください。` : null)).filter(Boolean);
   showMsgs(el.msgs, warns.slice(0, 3).map((w) => ["warn", w]));
   if (!list.length) { el.prev.innerHTML = ""; return; }
   const m = model();
@@ -276,7 +282,7 @@ function preview() {
 
 /* ---------- 書き出し ---------- */
 el.xlsx.addEventListener("click", async () => {
-  if (!entries().length) return showMsgs(el.msgs, [["err", "予定を1件以上入れてください。"]]);
+  if (!entries().length) return showMsgs(el.msgs, [["err", "保存する予定がまだありません。「予定を追加」から1件以上入れてください。"]]);
   try {
     const blob = await buildXlsx(model());
     download(blob, `${safeName(docTitle(), "スケジュール")}_${stamp()}.xlsx`);
@@ -286,12 +292,12 @@ el.xlsx.addEventListener("click", async () => {
   }
 });
 el.csv.addEventListener("click", () => {
-  if (!entries().length) return showMsgs(el.msgs, [["err", "予定を1件以上入れてください。"]]);
+  if (!entries().length) return showMsgs(el.msgs, [["err", "保存する予定がまだありません。「予定を追加」から1件以上入れてください。"]]);
   download(new Blob([toCsv(entries())], { type: "text/csv;charset=utf-8" }), `${safeName(docTitle(), "スケジュール")}_${stamp()}.csv`);
   flash(el.csv, "保存しました");
 });
-el.reset.addEventListener("click", () => {
-  if (entries().length >= 3 && !window.confirm("入力した予定をすべて消します。よろしいですか？")) return;
+function resetAll() {
+  if (entries().length >= 3 && !window.confirm("入力した予定と表のタイトルを、すべて消します。よろしいですか？")) return;
   rows = [];
   el.title.value = "";
   tpl.set(TEMPLATES[0].id, false);
@@ -300,7 +306,9 @@ el.reset.addEventListener("click", () => {
   drawRows();
   showMsgs(el.msgs, []);
   el.add.focus();
-});
+}
+el.reset.addEventListener("click", resetAll);
+el.resetAll.addEventListener("click", resetAll); // 一時保存の表示の横：予定が0件でタイトルだけのときも消せるように
 
 load();
 drawRows();

@@ -8,11 +8,11 @@
    OGPチェッカー（public/og/ogp.png）はデザインの元データ「OGP画像.html」から作ったものなので、ここでは作らない
    =========================================================== */
 export const OG = [
-  { slug: "common", out: "og-image.png", title: "毎回ちょっと{面倒}を、\nここで片づける。", points: ["無料・登録不要", "広告なし", "PDF・席順・Excel・OGP"] },
+  { slug: "common", out: "og-image.png", title: "毎回ちょっと{面倒}を、\nここで片づける。", points: ["無料・登録不要", "広告なし", "締切・PDF・席順・Excel・OGP"] },
   { slug: "seat", title: "幹事の席決めを、\n{1クリック}に。", points: ["名前を入れて押すだけ", "座席表を画像で保存", "名前は送信しません"] },
   { slug: "roulette", title: "「決める」を、\n{ちょっと楽しく}。", points: ["当たった人は自動で外す", "大きく表示できる", "順番決め・抽選に"] },
   { slug: "group", title: "誰と誰を組ませるか、\n{もう悩まない}。", points: ["リーダーを固定できる", "部署をばらけさせる", "名前は送信しません"] },
   { slug: "pdf-extract", title: "PDFを、\n{使える素材}にばらす。", points: ["文字・画像・ページ画像", "全部まとめてZIP", "ファイルは送信しません"] },
-  { slug: "deadline", title: "更新しなくても、\n{古くならない}付箋。", points: ["日→時間→分で自動更新", "Notion・Excelと行き来", "登録不要・送信なし"] },
+  { slug: "deadline", title: "締切までの残り時間を、\n{いつも目の前に}。", points: ["残り時間を自動で数える", "デスクトップに置ける", "登録不要・送信なし"] },
   { slug: "schedule-excel", title: "入れた予定が、\nそのまま{Excel}に。", points: ["一覧表・進行表・担当別", "CSVでも保存", "入力は送信しません"] },
 ];

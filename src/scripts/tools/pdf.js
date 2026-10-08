@@ -15,6 +15,7 @@ const el = {
   file: $("#pdf-file"),
   pass: $("#pdf-pass"),
   pickMsgs: $("#pdf-pick-msgs"),
+  opening: $("#pdf-opening"),
   name: $("#pdf-name"),
   meta: $("#pdf-meta"),
   reset: $("#pdf-reset"),
@@ -48,32 +49,49 @@ el.drop.addEventListener("dragleave", (e) => { if (!el.drop.contains(e.relatedTa
 el.drop.addEventListener("drop", (e) => {
   e.preventDefault();
   el.drop.classList.remove("over");
+  if (openingN) return; // 開いている途中は受け付けない
   const files = [...(e.dataTransfer?.files || [])];
-  if (files.length > 1) showMsgs(el.pickMsgs, [["info", "1つずつ読み取ります。最初のファイルを開きました。"]]);
-  if (files[0]) take(files[0]);
+  // 2つ以上落とされたときのお知らせは、開いたあとの欄（el.msgs）に出す（選ぶ欄は開くと隠れるため）
+  if (files[0]) take(files[0], files.length > 1);
 });
 el.file.addEventListener("change", () => { if (el.file.files[0]) take(el.file.files[0]); el.file.value = ""; });
 
-async function take(file) {
-  showMsgs(el.pickMsgs, []);
-  el.pass.hidden = true;
-  if (!/\.pdf$/i.test(file.name) && file.type !== "application/pdf") return showMsgs(el.pickMsgs, [["err", "PDFファイル（.pdf）を選んでください。"]]);
-  if (file.size === 0) return showMsgs(el.pickMsgs, [["err", "ファイルが空です（0バイト）。別のファイルでお試しください。"]]);
-  if (file.size > MAX_MB * 1048576) return showMsgs(el.pickMsgs, [["err", `${MAX_MB}MBまでのPDFにしてください（このファイルは${fmtSize(file.size)}）。`]]);
-  let data;
-  try {
-    data = await file.arrayBuffer();
-  } catch (e) {
-    return showMsgs(el.pickMsgs, [["err", "ファイルを読み込めませんでした。もう一度選び直してください。"]]);
-  }
-  // 中身の先頭が %PDF- でなければ、拡張子が .pdf でもPDFではない
-  const head = new TextDecoder("latin1").decode(new Uint8Array(data, 0, Math.min(1024, data.byteLength)));
-  if (!head.includes("%PDF-")) return showMsgs(el.pickMsgs, [["err", "PDFとして読めないファイルです。壊れているか、別の形式のファイルかもしれません。"]]);
-  await open(file, data);
+/* 開いているあいだ：選ぶ欄の下に「PDFを開いています…」を出し、続けて選べないようにする（大きなPDFで、何も起きていないように見えないように） */
+let openingN = 0;
+function showOpening(on) {
+  openingN = Math.max(0, openingN + (on ? 1 : -1));
+  const busyNow = openingN > 0;
+  el.opening.hidden = !busyNow;
+  el.file.disabled = busyNow;
+  el.drop.setAttribute("aria-busy", String(busyNow));
 }
 
-async function open(file, data, password) {
+async function take(file, many = false) {
+  showMsgs(el.pickMsgs, []);
+  el.pass.hidden = true;
+  if (!/\.pdf$/i.test(file.name) && file.type !== "application/pdf") return showMsgs(el.pickMsgs, [["err", "選んだファイルはPDFではないようです。PDF（.pdf）のファイルを選び直してください。"]]);
+  if (file.size === 0) return showMsgs(el.pickMsgs, [["err", "このファイルは中身が空（0バイト）です。元のPDFを保存し直すか、別のファイルを選んでください。"]]);
+  if (file.size > MAX_MB * 1048576) return showMsgs(el.pickMsgs, [["err", `このファイルは${fmtSize(file.size)}あります。読み込めるのは${MAX_MB}MBまでなので、PDFをいくつかに分けてから選んでください。`]]);
+  showOpening(true);
+  try {
+    let data;
+    try {
+      data = await file.arrayBuffer();
+    } catch (e) {
+      return showMsgs(el.pickMsgs, [["err", "ファイルを読み込めませんでした。お手数ですが、もう一度選び直してください。"]]);
+    }
+    // 中身の先頭が %PDF- でなければ、拡張子が .pdf でもPDFではない
+    const head = new TextDecoder("latin1").decode(new Uint8Array(data, 0, Math.min(1024, data.byteLength)));
+    if (!head.includes("%PDF-")) return showMsgs(el.pickMsgs, [["err", "このファイルはPDFとして読めませんでした。壊れているか、中身が別の形式のファイルかもしれません。元のアプリでPDFに書き出し直して、もう一度お試しください。"]]);
+    await open(file, data, undefined, many);
+  } finally {
+    showOpening(false);
+  }
+}
+
+async function open(file, data, password, many = false) {
   setBusy(true, "PDFを開いています…");
+  showOpening(true);
   try {
     lib ||= await import("../../lib/pdf-extract.js");
     // pdf.js は受け取ったデータを worker に渡して使えなくするので、写しを渡す（パスワードの入れ直し用に元を残す）
@@ -84,25 +102,29 @@ async function open(file, data, password) {
     el.pick.hidden = true;
     el.work.hidden = false;
     el.pass.hidden = true;
-    showMsgs(el.msgs, doc.numPages > 150 ? [["info", `${doc.numPages}ページあります。ページの画像化やZIPは時間がかかるので、必要なものだけ取り出すのがおすすめです。`]] : []);
+    const notes = [];
+    if (many) notes.push(["info", "PDFは1つずつ読み取るため、最初のファイルを開きました。ほかのファイルは「別のPDFにする」を押してから選んでください。"]);
+    if (doc.numPages > 150) notes.push(["info", `${doc.numPages}ページあるPDFです。「ページを画像化」と「全部まとめてZIP」は時間がかかるため、必要なものから順に取り出すのがおすすめです。`]);
+    showMsgs(el.msgs, notes);
   } catch (e) {
     if (lib && e instanceof lib.PdfPasswordError) {
       el.pass.hidden = false;
-      el.pass._pending = { file, data };
+      el.pass._pending = { file, data, many };
       const inp = $("input", el.pass);
       inp.value = "";
       inp.setAttribute("aria-invalid", String(e.wrong));
-      showMsgs(el.pickMsgs, e.wrong ? [["err", "パスワードがちがいます。もう一度入れてください。"]] : []);
+      showMsgs(el.pickMsgs, e.wrong ? [["err", "パスワードが合っていません。大文字・小文字のちがいも確かめて、もう一度入れてください。"]] : []);
       inp.focus();
     } else if (e?.name === "InvalidPDFException") {
-      showMsgs(el.pickMsgs, [["err", "PDFの中身が壊れているため、開けませんでした。"]]);
+      showMsgs(el.pickMsgs, [["err", "PDFの中身が壊れていて、開けませんでした。元のアプリでPDFを書き出し直すか、送り主にもう一度送ってもらってから、お試しください。"]]);
     } else if (!lib) {
-      showMsgs(el.pickMsgs, [["err", "読み取りの準備ができませんでした。通信の状態を確かめて、ページを読み込み直してください。"]]);
+      showMsgs(el.pickMsgs, [["err", "PDFを読み取る準備ができませんでした。インターネットにつながっているか確かめて、ページを読み込み直してください。"]]);
     } else {
-      showMsgs(el.pickMsgs, [["err", "このPDFは開けませんでした。別のPDFでお試しください。"]]);
+      showMsgs(el.pickMsgs, [["err", "このPDFは開けませんでした。いちどPDFを見るアプリで開いて、PDFとして保存し直すと、読み取れることがあります。"]]);
     }
   } finally {
     setBusy(false);
+    showOpening(false);
   }
 }
 
@@ -110,7 +132,7 @@ el.pass.addEventListener("submit", (e) => {
   e.preventDefault();
   const p = el.pass._pending;
   const pw = $("input", el.pass).value;
-  if (p && pw) open(p.file, p.data, pw);
+  if (p && pw) open(p.file, p.data, pw, p.many);
 });
 
 /* ---------- 取り出す ---------- */
@@ -175,15 +197,15 @@ async function setImageFormat(fmt) {
       const targets = state.images.filter((img) => img.opaque && !img.jpeg && !img.jpegFailed);
       for (let k = 0; k < targets.length; k++) {
         check();
-        progress(`JPEGにしています… ${k + 1} / ${targets.length}枚`, k, targets.length);
+        progress(`JPEGに変換しています… ${k + 1} / ${targets.length}枚`, k, targets.length);
         try { targets[k].jpeg = await lib.toJpeg(targets[k].blob); } catch (e) { targets[k].jpegFailed = true; }
       }
     }
     state.imgFormat = fmt;
     drawImages();
   } catch (e) {
-    if (e instanceof Cancelled) showMsgs(el.msgs, [["info", "中止しました。PNGのままです。"]]);
-    else showMsgs(el.msgs, [["err", "JPEGにできませんでした。PNGのまま保存してください。"]]);
+    if (e instanceof Cancelled) showMsgs(el.msgs, [["info", "中止しました。保存の形式はPNGのままです。"]]);
+    else showMsgs(el.msgs, [["err", "JPEGに変換できませんでした。お手数ですが、PNGのまま保存してください。"]]);
   } finally {
     setBusy(false);
     updateActs();
@@ -236,7 +258,7 @@ async function runZip() {
     check();
     progress("ZIPにまとめています…", 1, 1);
     const files = [];
-    const all = text.map((t, i) => `===== ${i + 1}ページ =====\n${t ?? "（読み取れませんでした）"}`).join("\n\n");
+    const all = text.map((t, i) => `===== ${i + 1}ページ =====\n${t ?? "（このページは読み取れませんでした）"}`).join("\n\n");
     files.push({ name: `text/all.txt`, data: all + "\n" });
     text.forEach((t, i) => files.push({ name: `text/${pad(i + 1)}.txt`, data: (t ?? "") + "\n" }));
     images.forEach((img) => { const f = imageFile(img); files.push({ name: `images/${f.name}`, data: f.blob, compress: false }); });
@@ -245,10 +267,10 @@ async function runZip() {
     download(zip, `${state.base}_pdf_extract.zip`);
     updateActs();
     if (!view) { view = "text"; draw(); }
-    showMsgs(el.msgs, [["ok", `ZIPを保存しました（テキスト${text.length}ページ・画像${images.length}枚・ページ画像${pages.filter((p) => !p.failed).length}枚）。`]]);
+    showMsgs(el.msgs, [["ok", `ZIPを保存しました。テキスト${text.length}ページ分・画像${images.length}枚・ページ画像${pages.filter((p) => !p.failed).length}枚が入っています。`]]);
   } catch (e) {
-    if (e instanceof Cancelled) showMsgs(el.msgs, [["info", "中止しました。取り出し終わった分は残っています。"]]);
-    else showMsgs(el.msgs, [["err", "ZIPを作れませんでした。ページ数が多い場合は、テキストだけ・画像だけに分けてお試しください。"]]);
+    if (e instanceof Cancelled) showMsgs(el.msgs, [["info", "中止しました。ZIPはまだ保存していません。もう一度「全部まとめてZIP」を押すと、テキスト・画像・ページ画像のうち取り出し終わったものはそのまま使い、残りから進めます。"]]);
+    else showMsgs(el.msgs, [["err", "ZIPを作れませんでした。ページ数が多いPDFでは、テキストだけ・画像だけのように分けて保存すると、うまくいくことがあります。"]]);
   } finally {
     setBusy(false);
     updateActs();
@@ -300,7 +322,7 @@ function drawText() {
         <button type="button" class="btn btn-ghost" data-do="zip-text" ${empty ? "disabled" : ""}>${svg("zip", 15)}ページごとにZIP</button>
       </div>
     </div>
-    ${empty ? `<p class="msg warn">${svg("warn", 15)}<span>文字が見つかりませんでした。スキャンしたPDFや、文字が画像になっているPDFかもしれません。「ページを画像化」なら画像として取り出せます。</span></p>` : ""}
+    ${empty ? `<p class="msg warn">${svg("warn", 15)}<span>文字が見つかりませんでした。紙をスキャンしたPDFや、文字が画像になっているPDFかもしれません。「ページを画像化」で画像にしてから、文字認識（OCR）のできるアプリで読み取ってください。</span></p>` : ""}
     <div class="pdfx-pages">
       ${t.map((x, i) => `
         <section class="pdfx-pg">
@@ -333,14 +355,14 @@ function drawImages() {
   const keptPng = jpeg ? list.filter((img) => img.name.endsWith(".png")).length : 0;
   // のぞいた画像は、理由ごとに数を出す
   const skipped = [
-    note.small && `小さすぎる画像（線や点など）${note.small}件`,
-    note.large && `大きすぎて処理できない画像${note.large}件`,
+    note.small && `線や点のような小さな画像${note.small}件`,
+    note.large && `大きすぎて処理できなかった画像${note.large}件`,
     note.failed && `読み取れなかった画像${note.failed}件`,
   ].filter(Boolean);
   const notes = [
-    skipped.length && [note.large || note.failed ? "warn" : "info", `のぞいたもの：${skipped.join("・")}`],
-    note.failedPages && ["warn", `${note.failedPages}ページは、画像を読み取れませんでした。`],
-    keptPng && ["info", `透明な部分がある画像と、PNGのほうが軽い画像（${keptPng}枚）は、PNGのままにしています。`],
+    skipped.length && [note.large || note.failed ? "warn" : "info", `次の画像は取り出していません。${skipped.join("、")}。${note.large || note.failed ? "必要なときは「ページを画像化」で、ページごと画像にしてください。" : ""}`],
+    note.failedPages && ["warn", `${note.failedPages}ページ分は、画像を読み取れませんでした。「ページを画像化」なら、そのページを丸ごと画像にできます。`],
+    keptPng && ["info", `透明な部分がある画像と、PNGのほうが軽い画像の計${keptPng}枚は、PNGのまま保存します。`],
   ].filter(Boolean);
   el.out.innerHTML = `
     <div class="out-head">
@@ -357,7 +379,7 @@ function drawImages() {
       </div>
     </div>
     ${notes.length ? `<div class="msgs" style="margin-bottom:var(--g-sm)">${notes.map(([k, t]) => `<p class="msg ${k}">${svg(k === "warn" ? "warn" : "info", 15)}<span>${esc(t)}</span></p>`).join("")}</div>` : ""}
-    ${list.length ? figs(list, false) : `<p class="msg info">${svg("info", 15)}<span>取り出せる画像はありませんでした。ページ全体を画像にしたいときは「ページを画像化」を使ってください。</span></p>`}`;
+    ${list.length ? figs(list, false) : `<p class="msg info">${svg("info", 15)}<span>このPDFには、取り出せる画像が見つかりませんでした。イラストが図形として描かれているPDFでは、画像として取り出せないことがあります。その場合は「ページを画像化」で、ページごと画像にしてください。</span></p>`}`;
   el.out._list = list;
 }
 

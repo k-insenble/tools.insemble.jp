@@ -44,7 +44,7 @@ export const TEMPLATES = [
   {
     id: "list",
     label: "一覧表",
-    desc: "日付・時間・内容を1行ずつ。並べた順のまま出します",
+    desc: "画面に並んでいる順のまま、1件を1行にして出します。",
     build(entries, { title, note }) {
       const m = frame(title, ["日付", "開始", "終了", "内容", "担当", "備考"], [16, 8, 8, 40, 14, 32], note);
       for (const e of entries) m.rows.push({ cells: [date(e.date), time(e.start), time(e.end), txt(e.title, "wrap"), txt(e.who), txt(e.note, "wrap")] });
@@ -54,7 +54,7 @@ export const TEMPLATES = [
   {
     id: "timetable",
     label: "進行表",
-    desc: "日付ごとに区切って、時間順に。所要時間も出します（イベント当日用）",
+    desc: "日付ごとに区切り、時間順に並べて所要時間も出します。イベント当日の進行に向いています。",
     build(entries, { title, note }) {
       const m = frame(title, ["開始", "終了", "所要", "内容", "担当", "備考"], [8, 8, 8, 44, 14, 32], note);
       let cur = null;
@@ -69,7 +69,7 @@ export const TEMPLATES = [
   {
     id: "person",
     label: "担当別",
-    desc: "担当ごとにまとめて、日付順に。だれが何をするかを配る用",
+    desc: "担当者ごとにまとめ、日付順に並べます。それぞれの担当者に配るときに向いています。",
     build(entries, { title, note }) {
       const m = frame(title, ["日付", "開始", "終了", "内容", "備考"], [16, 8, 8, 44, 36], note);
       const groups = new Map();

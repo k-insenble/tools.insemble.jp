@@ -4,7 +4,7 @@
 import Icon from "./Icon.astro";
 
 interface Props {
-  items: { q: string; a: string; cat?: string }[];
+  items: { q: string; a: string; cat?: string; cta?: { label: string; do?: string } }[]; // cta：答えの下に出す、ツールを操作するリンク（ToolPage の Cta と同じ）
   cats?: boolean; // カテゴリの絞り込みを出す
 }
 const { items, cats = false } = Astro.props;
@@ -26,7 +26,7 @@ const catList = cats ? ["すべて", ...new Set(items.map((f) => f.cat))] : [];
           <Icon name="chevron" size={18} class="q-chev" />
         </button>
         <div class="q-a-wrap" id={`faq-a-${i}`}>
-          <div><p class="q-a">{f.a}</p></div>
+          <div><p class="q-a">{f.a}</p>{f.cta && <a class="more-link q-cta" href="#tool" data-tool-do={f.cta.do}>{f.cta.label}<Icon name="arrow" size={15} /></a>}</div>
         </div>
       </div>
     ))}
