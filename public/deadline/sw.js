@@ -3,7 +3,7 @@
    ・/_astro/ のファイル（名前にハッシュ付き＝中身が変わらない）とアイコン：保存しておいたものを先に使う
    ・文字（Google Fonts）：保存しておいたものを出しつつ、裏で新しくする
    入力した締切などのデータは localStorage にあり、ここでは扱わない。計測タグ（GA・Clarity）にも触らない */
-const CACHE = "atonannichi-v2";
+const CACHE = "atonannichi-v3";
 const PAGE = "/deadline/";
 const FIXED = ["/deadline/manifest.webmanifest", "/deadline/icon-192.png", "/deadline/icon-512.png", "/deadline/icon-maskable-512.png", "/deadline/apple-touch-icon.png"];
 const FONT_HOSTS = ["fonts.googleapis.com", "fonts.gstatic.com"];

@@ -1,49 +1,55 @@
 ---
-/* あと何日？：締切までの残り時間が「日 → 時間 → 分」へ自動で変わる付箋。今日やることも一緒に
+/* あと何日？：締切までの残り時間を数え続け、近づくほど細かく・目立たせる。今日やることも一緒に
    デザインの元データは Claude Design の「あと何日？」。動きは src/scripts/tools/deadline.js、計算は src/lib/deadline.js
    アプリとして置ける（PWA）：public/deadline/manifest.webmanifest・sw.js。アプリで開いたときは、サイトの枠を隠してツールだけを出す */
 import ToolPage from "../../layouts/ToolPage.astro";
+import SectionHead from "../../components/SectionHead.astro";
+import Icon from "../../components/Icon.astro";
 
 const FAQ = [
-  { q: "入れた締切や「今日やること」は、どこかに送られますか？", a: "送られません。入れた内容は、お使いのブラウザの中（localStorage）にだけ保存します。運営者のサーバーにも、外部のサービスにも届きません。そのため、別のパソコンやスマホとは同期しません。" },
-  { q: "データが消えることはありますか？", a: "ブラウザの「閲覧履歴データの削除」などでサイトのデータを消すと、一緒に消えます。シークレットウィンドウでは、閉じると消えます。大事な締切は、ときどき「Excelに書き出す（バックアップにも）」で保存しておくと安心です。" },
-  { q: "日付だけを入れたとき、期限は何時になりますか？", a: "その日の23時59分59秒までとして計算します。「今日」「明日」のボタンや時刻のボタンで、12:00・18:00 など時刻を決めることもできます。時刻はお使いの端末の時計（タイムゾーン）に合わせています。" },
-  { q: "Notion・Excel・スプレッドシートの締切をまとめて入れられますか？", a: "できます。「締切を追加」→「Notion・Excelからまとめて貼り付け」を開き、1行に1件ずつ「タスク名」と「期限」を貼り付けてください。タブ（Excelやスプレッドシートからのコピー）、カンマ、2つ以上の空白のどれで区切っても読み取ります。期限は 2026-10-10・2026/10/10・10月10日 などの書き方が使えます。" },
-  { q: "登録した締切をNotionやExcelに持っていけますか？", a: "「コピーしてNotion・Excelに貼る」を押すと、「タスク名」と「期限」をタブで区切った一覧をコピーします。Notionの表やExcel・スプレッドシートにそのまま貼り付けられます。残り日数の関数を入れたファイルがほしいときは「Excelに書き出す」を使ってください。" },
-  { q: "パソコンに常に表示しておけますか？", a: "Chrome や Edge では、ヘッダーの「アプリとして置く」（またはアドレスバーのインストールのボタン）で、アプリとして開けます。画面の隅に置いて「ミニ」にすると、ウィンドウが締切1行ずつの小さな表示に縮みます（戻すと元の大きさに戻ります）。デスクトップやタスクバーのアイコンを右クリックすると「締切を追加」「今日やることを書く」から直接開けます。スマホでは、共有メニューの「ホーム画面に追加」から置けます。アプリにしたあとは、ネットにつながっていなくても使えます。" },
-  { q: "締切の時間になったら、通知は来ますか？", a: "通知や音は出しません。仕事の邪魔をしないように、画面の上の1行のお知らせ、カードの色、タブ名（「あと3時間 | あと何日？」のような、いちばん近い締切までの残り時間）で、静かに知らせる作りです。" },
+  { q: "入れた締切や「今日やること」は、どこかに送られますか？", a: "送られません。入れた内容は、お使いのブラウザの中（localStorage）にだけ保存し、運営者のサーバーにも外部のサービスにも届きません。そのため、別のパソコンやスマホでは見られません。ほかの端末に移したいときは、「コピーしてNotion・Excelに貼る」でコピーした一覧を、移す先の「Notion・Excelからまとめて貼り付け」に貼ってください。" },
+  { q: "データが消えることはありますか？", a: "あります。ブラウザの「閲覧履歴データの削除」などでサイトのデータを消すと、入れた締切も一緒に消えます。シークレットウィンドウ（履歴を残さない画面）で使った場合は、ウィンドウを閉じると消えます。大事な締切は、ときどき「Excelに書き出す（バックアップにも）」でファイルに保存しておくと、消えても手元に残ります。" },
+  { q: "日付だけを入れたとき、期限は何時になりますか？", a: "その日の23時59分59秒までとして数えます。たとえば10月10日とだけ入れると、10月10日が終わる瞬間までが残り時間になります。時刻を決めたいときは、「12:00」「18:00」などのボタンを押すか、時刻の欄で選んでください。時刻は、お使いの端末の時計（タイムゾーン＝地域ごとの標準時）に合わせています。" },
+  { q: "Notion・Excel・スプレッドシートの締切をまとめて入れられますか？", a: "できます。「締切を追加」を押し、入力欄の上にある「Notion・Excelからまとめて貼り付け」に切り替えてから、1行に1件ずつ「タスク名」と「期限」を貼り付けてください。区切りは、タブ（Excelやスプレッドシートからコピーしたときの区切り）、カンマ、2つ以上の空白のどれでも読み取ります。期限は「2026-10-10」「2026/10/10」「10月10日」などの書き方で入れられ、後ろに「18:00」のように時刻を付けることもできます。", cta: { label: "まとめて貼り付ける", do: "bulk" } },
+  { q: "登録した締切をNotionやExcelに持っていけますか？", a: "持っていけます。ツールの下にある「コピーしてNotion・Excelに貼る」を押すと、まだ完了していない締切を「タスク名」と「期限」の2列でコピーします。Notionの表やExcel・スプレッドシートに、そのまま貼り付けられます。残り日数が自動で変わるファイルにしたいときは、「Excelに書き出す（バックアップにも）」を押してください。Excelで開くたびに、その日の残り日数が計算し直されます。" },
+  { q: "パソコンに常に表示しておけますか？", a: "できます。Chrome や Edge では、ツールのいちばん上にある「アプリとして置く」を押すと、ブラウザとは別のウィンドウで開くアプリとして置けます。画面の隅に置いて「ミニ」を押すと、ウィンドウが締切を1行ずつ並べた小さな表示に縮み、もう一度押すと元の大きさに戻ります。デスクトップやタスクバーのアイコンを右クリックすると、「締切を追加」「今日やることを書く」をすぐに開けます。Mac の Safari では、macOS 14 以降なら、メニューバーの「ファイル」から「Dockに追加」を選ぶと置けます。iPhone・Android では、共有メニューやブラウザのメニューにある「ホーム画面に追加」から置けます。置き方が分からないときは、「アプリとして置く」を押すと、お使いのブラウザでの手順を表示します。Firefox のパソコン版はアプリとして置けないため、Chrome・Edge・Safari で開いてください。置いたあとは、ネットにつながっていなくても使えます。", cta: { label: "アプリとして置く", do: "place" } },
+  { q: "締切の時間になったら、通知は来ますか？", a: "通知や音は出しません。作業の邪魔をしないよう、画面の中で静かに知らせます。ツールの上の1行のお知らせと、締切のカードの色が、締切が近づくにつれて変わります。ブラウザのタブ名にも「あと3時間 | あと何日？」のように、いちばん近い締切までの残り時間が出るので、ほかのタブで作業していても目に入ります。期日の当日にメールで知らせてほしいときは、同じインセンブルがつくっている「きじかん」をお使いください。使い分けは、この「よくある質問」のすぐ上にある、きじかんの紹介をご覧ください。" },
 ];
 
 const SCENES = {
-  intro: "ふつうの付箋は、自分で見に行って、自分で書き換えないと古くなります。期限を一度書いておけば、残り時間が「日 → 時間 → 分」へ勝手に細かくなり、色と言葉で知らせてくれる付箋です。",
+  intro: "締切は、カレンダーやNotionを開かないと見えず、あと何日あるかも自分で数えることになります。あと何日？は、一度入れた締切の残り時間を数え続け、近づくほど表示を細かくして、色と言葉でも目立たせます。",
   groups: [
     {
       h: "Web制作・デザインの仕事",
       items: [
-        ["公開日・納品日が重なって、どれから手をつけるか迷う", "締切は近い順に並び、いちばん近いものが大きく出ます。画面の上の1行で「いま一番あぶないもの」が分かります。"],
-        ["案件ごとの締切をNotionで管理しているが、毎回開くのが面倒", "Notionの表からコピーして「Notion・Excelからまとめて貼り付け」へ。画面の隅に置いておけば、開かずに残り時間が見られます。"],
-        ["見積書の提出が「今日の何時まで」かを、うっかり忘れそう", "時刻まで入れておけば、当日は「あと8時間12分」のように分単位で数えます。"],
+        ["公開日・納品日が重なって、どれから手をつけるか迷う", "締切は近い順に並び、いちばん近いものがいちばん大きく表示されます。ツールの上の1行のお知らせで、いま急ぐべき締切がひと目で分かります。"],
+        ["案件ごとの締切をNotionで管理しているが、毎回開くのが面倒", "Notionの表をコピーして「Notion・Excelからまとめて貼り付け」に貼れば、まとめて入ります。アプリとして画面の隅に置いておけば、Notionを開かなくても残り時間が目に入ります。"],
+        ["見積書の提出が「今日の何時まで」かを、うっかり忘れそう", "時刻まで入れておくと、当日は「あと8時間12分」のように分単位で数えるので、残りの持ち時間がすぐに分かります。"],
       ],
     },
     {
       h: "事務・総務・営業",
       items: [
-        ["請求書の送付や月末の締め作業を、カレンダーとは別にさっと確認したい", "いちばん近い締切までの残り時間がタブ名にも「あと2日」と出るので、別の作業中でも目に入ります。"],
-        ["今日やることを、紙の付箋に書いてはなくしてしまう", "「今日やること」に1行書いて Enter。終わったらチェックで線が引けて、翌朝には自動で片づきます。"],
-        ["締切の一覧をExcelで上司と共有したい", "「Excelに書き出す」で、残り日数と状態の関数が入ったファイルに。Excelで開くたびに数字が更新されます。"],
-        ["Excelで「今日から期限まで何日」を出す関数を、毎回調べている", "締切のカードの「Excelで計算」から、その日付入りの関数をワンクリックでコピーできます。"],
+        ["請求書の送付や月末の締め作業を、カレンダーとは別にさっと確認したい", "ブラウザのタブ名にも、いちばん近い締切までの残り時間が「あと2日14時間」のように出るので、別の作業をしていても目に入ります。"],
+        ["今日やることを、紙の付箋に書いてはなくしてしまう", "「今日やること」に書いておけば、このブラウザに残るので、なくす心配がありません。終わったものにチェックを付けると線が引かれます。"],
+        ["締切の一覧をExcelで上司と共有したい", "「Excelに書き出す」を押すと、残り日数と状態を計算する関数の入ったファイルができます。Excelで開くたびに数字が更新されるので、そのまま共有できます。"],
+        ["Excelで「今日から期限まで何日」を出す関数を、毎回調べている", "締切のカードの「Excelで計算」を開くと、その締切の日付を入れた関数が表示され、ワンクリックでコピーできます。"],
       ],
     },
     {
       h: "学校・個人の締切",
       items: [
-        ["レポートや課題の提出日が、気づくと明日になっている", "3日前から琥珀色、24時間を切ると朱色、過ぎると濃い色に反転。色だけでなく「明日が期限」と言葉でも知らせます。"],
-        ["申し込みや支払いの期限を、スマホのホーム画面に置いておきたい", "ホーム画面に追加すれば、アプリのように開けて、ネットにつながっていなくても使えます。"],
-        ["登録やログインが必要なアプリは、使い始めるのが面倒", "登録はいりません。開いたらすぐ書けて、データはこのブラウザの中だけに残ります。"],
+        ["レポートや課題の提出日が、気づくと明日になっている", "締切の3日前からカードが黄色に、24時間を切るとオレンジに変わり、期限を過ぎると濃い色に反転します。色だけでなく、「明日が期限」のように言葉でも知らせます。"],
+        ["申し込みや支払いの期限を、スマホのホーム画面に置いておきたい", "ホーム画面に追加すると、アプリのようにすぐ開けて、ネットにつながっていなくても使えます。"],
+        ["登録やログインが必要なアプリは、使い始めるのが面倒", "登録もログインもいりません。開いたらすぐに書き始められ、入れた内容はこのブラウザの中だけに保存されます。"],
       ],
     },
   ],
 };
+
+/* 先の期日は、メールで知らせる自社サービス「きじかん」へ。リンクだけで、入れた締切は渡さない（規約の「送信しません」のまま）
+   どこから来たかは、きじかん側で utm_content（composer＝追加欄／guide＝読みもの）を見て分ける */
+const KIJICAN = (from: string) => `https://kijican.jp/?utm_source=insemble-tools&utm_medium=referral&utm_campaign=deadline&utm_content=${from}`;
 
 /* Claude Design のフォント（数字は Bricolage Grotesque、日本語は Zen Kaku Gothic New、関数は IBM Plex Mono） */
 const FONTS = "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600&family=IBM+Plex+Mono:wght@400&family=Zen+Kaku+Gothic+New:wght@400;700;900&display=swap";
@@ -54,25 +60,25 @@ const PLUS = (s: number, w = 1.7) => `<svg width="${s}" height="${s}" viewBox="0
 <ToolPage
   slug="deadline"
   title="締切までの残り時間を自動でカウントダウン｜あと何日？｜insemble tools"
-  description="締切を入れると、残り時間が「あと2日14時間」「あと42分」のように自動で細かくなる無料の付箋ツール。今日やることのチェック付き。Notion・Excelとの貼り付け・コピーに対応。登録不要で、データはブラウザの中だけに保存します。"
-  ogTitle="あと何日？｜更新しなくても、古くならない付箋"
+  description="締切を入れると、残り時間を「あと2日14時間」「あと42分」と自動でカウントダウンする無料ツールです。デスクトップやスマホのホーム画面にアプリとして置け、Notion・Excelとの貼り付けもできます。登録不要で、データはブラウザの中だけに保存します。"
+  ogTitle="あと何日？｜締切までの残り時間を、いつも目の前に"
   h1="あと何日？｜締切までの残り時間を数える無料ツール"
-  lead={["更新しなくても、", "古くならない", "付箋。"]}
-  sub="期限を一度書けば、残り時間が「日 → 時間 → 分」へ自動で切り替わります。今日やることも、ここに。"
-  meta={[["check", "ブラウザ内に保存"], ["check", "送信しません"]]}
+  lead={["締切までの残り時間を、", "いつも目の前に", "。"]}
+  sub="締切を入れておくと、残り時間を数え続けます。近づくと「あと5時間」「あと42分」と細かくなり、色でも知らせます。パソコンの画面の隅やスマホのホーム画面に置いておけます。"
+  meta={[["check", "デスクトップに置ける"], ["check", "ブラウザ内に保存"], ["check", "送信しません"]]}
   steps={[
-    { t: "締切を入れる", d: "「締切を追加」で名前と日付を。日付だけなら、その日の23:59までとして数えます。" },
-    { t: "あとは放っておく", d: "残り時間は自動で更新。3日前・24時間前・期限切れで、カードの色と言葉が変わります。" },
-    { t: "今日やることを消していく", d: "1行書いて Enter、終わったらチェック。完了したものは翌朝に片づきます。" },
+    { t: "締切を入れる", d: "「締切を追加」を押して、締切の名前と日付を入れます。時刻まで決めておくと、当日は分単位で数えます。", cta: { label: "締切を追加する", do: "add" } },
+    { t: "画面の隅に置いて、放っておく", d: "「アプリとして置く」を押すと、デスクトップの隅やスマホのホーム画面に置けます。残り時間は自動で更新され、締切が近づくとカードの色と言葉で知らせます。", cta: { label: "アプリとして置く", do: "place" } },
+    { t: "今日やることを消していく", d: "「今日やること」に1行書いて Enter キーで追加し、終わったらチェックを付けます。チェックしたものは、翌朝に自動で片づきます。", cta: { label: "今日やることを書く", do: "today" } },
   ]}
   scenes={SCENES}
   faq={FAQ}
   about={[
-    ["しくみ", "残り時間は、開くたび・1秒ごとに「期限 − いまの時刻」で計算し直します。ページを開きっぱなしでも、ずれません。"],
-    ["保存", "入れた内容は、お使いのブラウザの中（localStorage）にだけ保存します。運営者には届きません。ブラウザのデータを消すと、一緒に消えます。"],
-    ["アプリとして", "PWA（ホーム画面やデスクトップに置けるWebアプリ）に対応。置いたあとはオフラインでも使えます。アイコンの右クリックから「締切を追加」も開けます。"],
+    ["しくみ", "残り時間は、ページを開いたときと、その後1秒ごとに「期限 − いまの時刻」で計算し直します。そのため、何日も開いたままにしていても表示はずれません。"],
+    ["保存", "入れた内容は、お使いのブラウザの中（localStorage）にだけ保存し、運営者には届きません。ブラウザの閲覧履歴データを削除すると、一緒に消えます。"],
+    ["アプリとして", "PWA（ホーム画面やデスクトップに置けるWebアプリ）として使えます。置いたあとは、ネットにつながっていなくても開けます。パソコンの Chrome・Edge で置いた場合は、アイコンを右クリックすると「締切を追加」をすぐに開けます。"],
   ]}
-  relatedSub="締切の多い日の進行表は、スケジュール→Excelメーカーで表にできます。"
+  relatedSub="締切に向けた進行表をExcelで配りたいときは、スケジュール→Excelメーカーで作れます。"
   corp="たとえば「チーム全員の締切を1つの画面にまとめて、近いものから知らせる」ような、社内向けの専用ツールもつくれます。"
   appCategory="BusinessApplication"
   updated="2026-10-08"
@@ -84,9 +90,9 @@ const PLUS = (s: number, w = 1.7) => `<svg width="${s}" height="${s}" viewBox="0
       <div class="an-hd">
         <span class="an-brand"><Fragment set:html={LOGO} />あと何日？</span>
         <span class="an-clock" id="an-clock" aria-hidden="true"></span>
-        <button type="button" class="an-hbtn" id="an-install" hidden>アプリとして置く</button>
-        <button type="button" class="an-hbtn" id="an-mini-btn" aria-pressed="false" title="ミニ表示（ちらっと見る用）">
-          <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true"><rect x="1" y="2" width="11" height="3" rx="1.2" stroke="currentColor" stroke-width="1.3"/><rect x="1" y="8" width="11" height="3" rx="1.2" stroke="currentColor" stroke-width="1.3"/></svg>ミニ
+        <button type="button" class="an-hbtn is-place" id="an-install" hidden><svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true"><rect x="1" y="1.5" width="11" height="7.5" rx="1.4" stroke="currentColor" stroke-width="1.3"/><path d="M4.5 11.5h4M6.5 9v2.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>アプリとして置く</button>
+        <button type="button" class="an-hbtn" id="an-mini-btn" aria-pressed="false" title="締切を1行ずつ並べた、小さな表示に切り替えます" aria-label="ミニ表示">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true"><rect x="1" y="2" width="11" height="3" rx="1.2" stroke="currentColor" stroke-width="1.3"/><rect x="1" y="8" width="11" height="3" rx="1.2" stroke="currentColor" stroke-width="1.3"/></svg><span class="an-hlbl">ミニ</span>
         </button>
       </div>
 
@@ -103,7 +109,7 @@ const PLUS = (s: number, w = 1.7) => `<svg width="${s}" height="${s}" viewBox="0
       <!-- ミニ（常駐用の計器だけ） -->
       <div class="an-mini" id="an-mini" hidden>
         <ul class="an-mlist" id="an-mlist" aria-label="締切"></ul>
-        <p class="an-mempty" id="an-mempty" hidden>締切はありません</p>
+        <p class="an-mempty" id="an-mempty" hidden>締切はまだありません</p>
         <p class="an-mtoday"><b id="an-mcount"></b><span id="an-mnext"></span></p>
       </div>
 
@@ -116,15 +122,24 @@ const PLUS = (s: number, w = 1.7) => `<svg width="${s}" height="${s}" viewBox="0
           </div>
 
           <p class="an-samples" id="an-samples" hidden>
-            <span>いま表示しているのはサンプルです。自分の予定を入れると自動で片付きます。</span>
+            <span>いま表示しているのはサンプルです。自分の締切か今日やることを1つ入れると、サンプルは自動で消えます。</span>
             <button type="button" id="an-clear-samples">今すぐ消す</button>
           </p>
 
           <div class="an-ask" id="an-backup" hidden>
-            <p><b id="an-backup-t"></b>データはこのブラウザの中だけにあるので、履歴の削除などで消えることがあります。一度書き出しておきますか？</p>
+            <p><b id="an-backup-t"></b>データはこのブラウザの中だけにあるので、閲覧履歴データを削除すると一緒に消えます。念のため、ファイルに書き出しておきますか？</p>
             <div class="an-ask-a">
               <button type="button" class="an-btn" id="an-backup-no">今はいい</button>
               <button type="button" class="an-btn is-primary" id="an-backup-yes">書き出す</button>
+            </div>
+          </div>
+
+          <!-- アプリとして置く：2件目を入れたら一度だけ声をかける／ヘッダーのボタンから置き方を出す -->
+          <div class="an-ask" id="an-place" hidden>
+            <p id="an-place-t"></p>
+            <div class="an-ask-a">
+              <button type="button" class="an-btn" id="an-place-no">今はいい</button>
+              <button type="button" class="an-btn is-primary" id="an-place-yes">置く</button>
             </div>
           </div>
 
@@ -146,16 +161,17 @@ const PLUS = (s: number, w = 1.7) => `<svg width="${s}" height="${s}" viewBox="0
                 <div class="an-chips" id="an-tchips"></div>
                 <input class="an-pick" id="an-time" type="time" aria-label="時刻を選ぶ" />
               </fieldset>
-              <p class="an-hint">期限日は23:59として計算（時刻を選ぶと変えられます）</p>
+              <p class="an-hint">日付だけのときは、その日の23:59までとして数えます。時刻を選ぶと変えられます。</p>
+              <p class="an-kj" id="an-kj" hidden>1か月以上先の期日は、インセンブルの「<a href={KIJICAN("composer")} target="_blank" rel="noopener">きじかん</a>」に登録しておくと、当日にメールで知らせてくれます。</p>
             </div>
             <div class="an-bulk" id="an-bulk" hidden>
-              <label class="an-blabel" for="an-bulk-in">1行に1件。「タスク名」と「期限」をタブかカンマで区切って貼り付けます。</label>
+              <label class="an-blabel" for="an-bulk-in">1行に1件ずつ、「タスク名」と「期限」をタブかカンマで区切って貼り付けてください。</label>
               <pre class="an-eg" id="an-eg" aria-label="入力の例"></pre>
               <textarea class="an-bta" id="an-bulk-in" rows="5" spellcheck="false" placeholder="ここに貼り付け"></textarea>
               <p class="an-bres" id="an-bres" aria-live="polite"></p>
             </div>
             <div class="an-cfoot">
-              <div class="an-prev"><span>登録すると</span><b id="an-preview"></b></div>
+              <div class="an-prev"><span>追加すると</span><b id="an-preview"></b></div>
               <button type="button" class="an-btn" id="an-cancel">やめる</button>
               <button type="button" class="an-btn is-primary" id="an-submit">追加する</button>
             </div>
@@ -166,7 +182,7 @@ const PLUS = (s: number, w = 1.7) => `<svg width="${s}" height="${s}" viewBox="0
           <div class="an-empty" id="an-empty" hidden>
             <p class="an-eh"><span class="an-ex">例</span>企画書の提出</p>
             <p class="an-en" aria-hidden="true"><span>あと</span><b>3</b><span>日</span></p>
-            <p class="an-ed">期限を入れておくと、残り時間が「日 → 時間 → 分」へ自動で切り替わります。更新はいりません。</p>
+            <p class="an-ed">締切を入れると、このように残り時間が大きく表示されます。</p>
             <button type="button" class="an-btn is-ink" id="an-first">最初の締切を入れる</button>
           </div>
 
@@ -187,17 +203,17 @@ const PLUS = (s: number, w = 1.7) => `<svg width="${s}" height="${s}" viewBox="0
             <div class="an-tbar" aria-hidden="true"><i id="an-tbar"></i></div>
             <label class="an-tin"><Fragment set:html={PLUS(14, 1.6)} /><input id="an-task" type="text" placeholder="今日やることを書いて Enter" aria-label="今日やること（Enterで追加）" maxlength="120" autocomplete="off" enterkeyhint="done" /></label>
             <ul class="an-tasks" id="an-tasks"></ul>
-            <p class="an-alldone" id="an-alldone" hidden><span class="an-sumi" aria-hidden="true">済</span>今日の分はぜんぶ完了。おつかれさまでした。</p>
-            <p class="an-notasks" id="an-notasks" hidden>思いついたら一行だけ。終わったらチェックで線が引けます。</p>
-            <p class="an-tnote">完了したものは翌朝に自動で片付きます</p>
+            <p class="an-alldone" id="an-alldone" hidden><span class="an-sumi" aria-hidden="true">済</span>今日の分は、ぜんぶ完了しました。おつかれさまでした。</p>
+            <p class="an-notasks" id="an-notasks" hidden>やることを1行書いて Enter キーを押すと、ここに並びます。終わったものにチェックを付けると、線が引かれます。</p>
+            <p class="an-tnote">チェックしたものは、翌朝に自動で片づきます。</p>
           </div>
         </section>
 
         <div class="an-out">
-          <button type="button" class="an-ghost" id="an-tsv" title="「タスク名」と「期限」をタブ区切りでコピー">
+          <button type="button" class="an-ghost" id="an-tsv" title="まだ完了していない締切の「タスク名」と「期限」を、タブ区切りでコピーします">
             <svg width="11" height="11" viewBox="0 0 12 12" fill="none" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M8.5 3.5V2.5a1 1 0 0 0-1-1h-5a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1h1" stroke="currentColor" stroke-width="1.3"/></svg>コピーしてNotion・Excelに貼る
           </button>
-          <button type="button" class="an-ghost" id="an-csv" title="残り日数の関数つきCSV。バックアップにも">
+          <button type="button" class="an-ghost" id="an-csv" title="残り日数を計算する関数入りのCSVファイル（Excelで開ける表のファイル）を保存します。バックアップにも使えます">
             <svg width="11" height="11" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M6 1.5v6.2M3.4 5.2 6 7.8l2.6-2.6M2 10.2h8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Excelに書き出す（バックアップにも）
           </button>
         </div>
@@ -208,6 +224,20 @@ const PLUS = (s: number, w = 1.7) => `<svg width="${s}" height="${s}" viewBox="0
       <div class="an-toast" id="an-toast" hidden><span id="an-toast-t" role="status"></span><button type="button" id="an-undo" hidden>元に戻す</button></div>
     </div>
   </div>
+
+  <section class="wrap sec" slot="guide">
+    <SectionHead id="kijican" kicker="もっと先の期日は" title="数か月先の期日は「きじかん」で" sub="あと何日？は、目に入るところに置いて、残り時間を見るための付箋です。半年先の契約更新のように、ふだんは意識しない先の期日には、その日にメールで知らせてくれる「きじかん」が向いています。どちらもインセンブルがつくっています。" />
+    <div class="about solo reveal">
+      <div>
+        <div class="log-h">使い分け</div>
+        <dl>
+          <div><dt>あと何日？</dt><dd>近い締切の残り時間を、いつも見えるところに出しておく付箋です。通知は出さず、データはこのブラウザの中だけに保存します。</dd></div>
+          <div><dt>きじかん</dt><dd>決めた日に、自分や担当者へメールで知らせるサービスです。最長1年先までの期日に使え、免許・資格の更新、契約の更新、登記など、忘れると困る先の期日に向いています。</dd></div>
+        </dl>
+        <a class="more-link" href={KIJICAN("guide")} target="_blank" rel="noopener">きじかんを見る<Icon name="arrow" size={15} /></a>
+      </div>
+    </div>
+  </section>
 </ToolPage>
 
 <script>
@@ -242,6 +272,9 @@ const PLUS = (s: number, w = 1.7) => `<svg width="${s}" height="${s}" viewBox="0
   .an-hbtn{flex:none;white-space:nowrap;height:30px;padding:0 10px;display:flex;align-items:center;gap:6px;border-radius:8px;border:1px solid #CFDADC;background:#fff;font-size:12px;font-weight:700;color:#1B2A2D}
   .an-hbtn:hover{border-color:#1B2A2D}
   .an-hbtn[aria-pressed="true"]{background:#2E6A74;border-color:#2E6A74;color:#fff}
+  /* アプリとして置く：ヘッダーでこれだけ塗る（いちばん伝えたい機能なので） */
+  .an-hbtn.is-place{background:#2E6A74;border-color:#2E6A74;color:#fff}
+  .an-hbtn.is-place:hover{background:#245760;border-color:#245760}
 
   /* お知らせ */
   .an-nwrap{padding:10px 20px 0}
@@ -295,6 +328,8 @@ const PLUS = (s: number, w = 1.7) => `<svg width="${s}" height="${s}" viewBox="0
   .an-chip[aria-pressed="true"]{background:#2E6A74;border-color:#2E6A74;color:#fff}
   .an-pick{height:32px;padding:0 8px;border-radius:8px;border:1px solid #CFDADC;background:#F4F7F7;color:#1B2A2D;font-size:12.5px;font-family:inherit}
   .an-hint{font-size:11.5px;color:#617275;margin-top:-6px}
+  .an-kj{font-size:12px;line-height:1.6;color:#4E5E61;margin-top:-8px}
+  .an-kj a{font-weight:700;color:#2E6A74;text-decoration:underline;text-underline-offset:3px}
   .an-blabel{font-size:13px;font-weight:700;line-height:1.6}
   .an-eg{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:11.5px;line-height:1.7;color:#4E5E61;background:#F4F7F7;border-radius:10px;padding:8px 12px;white-space:pre;overflow-x:auto;tab-size:14}
   .an-bta{width:100%;min-height:7.5em;resize:vertical;border:1px solid #CFDADC;border-radius:11px;padding:10px 12px;font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:13px;line-height:1.7;color:#1B2A2D;background:#fff}
@@ -429,8 +464,10 @@ const PLUS = (s: number, w = 1.7) => `<svg width="${s}" height="${s}" viewBox="0
   .an-ft a{color:#4E5E61;text-decoration:none}
   .an-ft a:hover{color:#1B2A2D;text-decoration:underline}
   .an-pw{display:none}
-  .an-toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:60;display:flex;align-items:center;gap:14px;padding:10px 12px 10px 16px;border-radius:12px;background:#1B2A2D;color:#F4F7F7;font-size:13px;box-shadow:0 12px 30px -12px rgba(0,0,0,.45);animation:aw-toast .25s ease-out;white-space:nowrap;max-width:calc(100vw - 32px)}
-  .an-toast span{overflow:hidden;text-overflow:ellipsis}
+  .an-toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:60;display:flex;align-items:center;gap:14px;padding:10px 12px 10px 16px;border-radius:12px;background:#1B2A2D;color:#F4F7F7;font-size:13px;box-shadow:0 12px 30px -12px rgba(0,0,0,.45);animation:aw-toast .25s ease-out;width:max-content;max-width:min(480px,calc(100vw - 32px))}
+  /* 長い文は2行まで折り返す（狭いスマホで「…」と切れないように） */
+  .an-toast span{line-height:1.5;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+  .an-toast button{flex:none;white-space:nowrap}
   .an-toast button{color:#FFB085!important;font-size:13px;font-weight:700;padding:2px 4px}
 
   /* ミニ（常駐用） */
@@ -458,6 +495,17 @@ const PLUS = (s: number, w = 1.7) => `<svg width="${s}" height="${s}" viewBox="0
     .an-card.is-featured{padding:18px 18px 14px}
     .is-featured .an-n{font-size:56px}
     .an-clock{font-size:12px}
+    /* 狭いときは「アプリとして置く」を優先：時計を隠し、ミニはアイコンだけに */
+    .an-hd:has(.is-place:not([hidden])) .an-clock{display:none}
+    .an-hd:has(.is-place:not([hidden])) .an-brand{margin-right:auto}
+    .an-hd:has(.is-place:not([hidden])) .an-hlbl{display:none}
+  }
+  /* 320px の端末：ボタンのアイコンを外して、1行に収める */
+  @container an (max-width:340px){
+    .an-hd{padding:12px 10px;gap:6px}
+    .an-hbtn.is-place svg{display:none}
+    .an-brand{font-size:14px;gap:6px}
+    .an-hbtn{padding:0 8px}
   }
   /* タッチ操作では押せる大きさを確保。入力欄は 16px（iOS で拡大されないように） */
   @media (pointer:coarse){

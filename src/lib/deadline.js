@@ -77,8 +77,10 @@ export function view(d, now) {
 
 /** お知らせの1行：いちばん近い（いちばん緊急な）締切を代表にする */
 export function notice(cards) {
-  if (!cards.length) return { st: "normal", key: "none", msg: "いま、締切はありません。", sub: "締切を入れると、ここで残り時間を知らせます", dismissable: false };
+  if (!cards.length) return { st: "normal", key: "none", msg: "締切はまだありません", sub: "「締切を追加」から入れると、いちばん近い締切の残り時間をここで知らせます", dismissable: false };
   const c = cards[0], t = c.title, v = c.v;
+  // サンプルは落ち着いた色で。初めて開いた人に、自分の何かが期限切れになりそうな警告に見えないように
+  if (c.sample) return { st: "normal", key: "sample", msg: `サンプル：「${t}」まで ${v.short}`, sub: "自分の締切を入れると、ここで知らせます", dismissable: false };
   const near = cards.filter((x) => x.v.st !== "normal").length;
   const more = near > 1 ? `ほか${near - 1}件も近づいています` : "";
   let msg, sub;
@@ -87,7 +89,7 @@ export function notice(cards) {
   else if (v.st === "urgent") { msg = `「${t}」まで ${v.short}`; sub = v.pill; }
   else if (v.pill === "明日が期限") { msg = `「${t}」は明日が期限です`; sub = v.short; }
   else if (v.st === "caution") { msg = `「${t}」まで ${v.short}`; sub = ""; }
-  else { msg = `次の締切「${t}」まで ${v.short}`; sub = "いいペースです"; }
+  else { msg = `次の締切「${t}」まで ${v.short}`; sub = "3日以内の締切はありません"; }
   if (more) sub = sub ? `${sub} · ${more}` : more;
   return { st: v.st, key: `${c.id}:${v.st}:${v.pill}`, msg, sub, dismissable: v.st !== "normal" };
 }
@@ -100,7 +102,7 @@ export function formulas(due) {
     { label: "今日から期限まで（日）", code: `=${DATE}-TODAY()` },
     { label: "DATEDIFで日数", code: `=DATEDIF(TODAY(),${DATE},"D")`, note: "期限を過ぎるとエラーになります" },
     { label: "残り時間（時間）", code: `=ROUNDDOWN((${DATE}+TIME(${d.getHours()},${d.getMinutes()},0)-NOW())*24,0)` },
-    { label: "A2の日付まで（日）", code: "=A2-TODAY()", note: "A2に期限日を入れておく形" },
+    { label: "A2の日付まで（日）", code: "=A2-TODAY()", note: "A2のセルに期限日を入れて使います" },
   ];
 }
 
@@ -117,7 +119,7 @@ export function toCsv(deadlines) {
   const q = (v) => '"' + String(v).replace(/"/g, '""') + '"';
   const safe = noFormula;
   const fmt = (t) => { const d = new Date(t); return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()} ${hm(t)}`; };
-  const rows = [["締切", "期限", "残り日数", "残り時間", "状態", "完了"]];
+  const rows = [["締切", "期限", "残り日数", "残り時間（時間）", "状態", "完了"]];
   [...deadlines].sort((a, b) => a.dueDate - b.dueDate).forEach((d, i) => {
     const r = i + 2;
     rows.push([safe(oneLine(d.title)), fmt(d.dueDate), `=IF(F${r}="済","",INT(B${r})-TODAY())`, `=IF(F${r}="済","",ROUNDDOWN((B${r}-NOW())*24,0))`,
@@ -225,7 +227,7 @@ export function normalize(raw, now) {
   // win：アプリとして置いたときの、ミニにする前のウィンドウの大きさ
   const okSize = (v) => Number.isFinite(v) && v >= 200 && v <= 8000;
   const win = ui.win && okSize(ui.win.w) && okSize(ui.win.h) ? { w: Math.round(ui.win.w), h: Math.round(ui.win.h) } : null;
-  return { version: VERSION, tasks, deadlines, ui: { mini: !!ui.mini, todayOpen: !!ui.todayOpen, backupAsked: !!ui.backupAsked, win } };
+  return { version: VERSION, tasks, deadlines, ui: { mini: !!ui.mini, todayOpen: !!ui.todayOpen, backupAsked: !!ui.backupAsked, placeAsked: !!ui.placeAsked, win } };
 }
 
 /** 片づけ：前の日までに完了した「今日やること」と、30日より前に完了した締切を消す */
