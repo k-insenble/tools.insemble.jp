@@ -35,6 +35,7 @@ const LEAD_MARK = /^[★☆*＊]+\s*|\s*[★☆*＊]+$/g;
 export function parsePeople(text, { leadMark = false } = {}) {
   const warnings = [];
   const people = [];
+  let cut = false; // 40文字を超えて切り詰めた名前があったか（ちょうど40文字は注意しない）
   const lines = String(text || "").split(/\r?\n/);
   for (const line of lines) {
     const raw = line.replace(/　/g, " ").trim();
@@ -47,17 +48,18 @@ export function parsePeople(text, { leadMark = false } = {}) {
       name = stripped.trim();
     }
     if (!name) continue;
+    if (name.length > MAX_NAME) cut = true;
     people.push({ name: name.slice(0, MAX_NAME), tag: (tag || "").slice(0, MAX_NAME), lead });
   }
-  if (people.some((p) => p.name.length >= MAX_NAME)) warnings.push(`長い名前は${MAX_NAME}文字までにしています。`);
+  if (cut) warnings.push(`名前は${MAX_NAME}文字までです。それより長い名前は、先頭の${MAX_NAME}文字だけを使います。`);
   if (people.length > MAX_PEOPLE) {
-    warnings.push(`${MAX_PEOPLE}人までにしています（${people.length - MAX_PEOPLE}人を外しました）。`);
+    warnings.push(`入れられるのは${MAX_PEOPLE}人までです。名前の欄の上から${MAX_PEOPLE}人を使い、残りの${people.length - MAX_PEOPLE}人は含めていません。`);
     people.length = MAX_PEOPLE;
   }
   const seen = new Map();
   for (const p of people) seen.set(p.name, (seen.get(p.name) || 0) + 1);
   const dup = [...seen].filter(([, n]) => n > 1).map(([k]) => k);
-  if (dup.length) warnings.push(`同じ名前がいます（${dup.slice(0, 3).join("、")}${dup.length > 3 ? " ほか" : ""}）。別の人なら「田中A」のように書き分けると見分けやすくなります。`);
+  if (dup.length) warnings.push(`同じ名前の「${dup.slice(0, 3).join("」「")}」${dup.length > 3 ? "ほか" : ""}が、2回以上入っています。同じ人なら、1つを消してください。別の人なら「田中A」「田中B」のように書き分けると、結果で見分けやすくなります。`);
   return { people, warnings };
 }
 

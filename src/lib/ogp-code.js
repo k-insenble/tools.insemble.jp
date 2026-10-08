@@ -4,7 +4,7 @@
    =========================================================== */
 export const PLATFORMS = {
   sns: [
-    { id: "x", name: "X (Twitter)", color: "#0f1419", glyph: "𝕏" },
+    { id: "x", name: "X（Twitter）", color: "#0f1419", glyph: "𝕏" },
     { id: "facebook", name: "Facebook", color: "#1877f2", glyph: "f" },
     { id: "line", name: "LINE", color: "#06c755", glyph: "L" },
   ],

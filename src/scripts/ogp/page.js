@@ -42,8 +42,8 @@ function setLoading(on) {
 // 日本語ドメインは xn-- の形にして送る。ID・パスワード入りのURLは、履歴やシェア用リンクに残らないよう送る前に止める
 function toFetchUrl(url) {
   let u;
-  try { u = new URL(url); } catch (e) { throw new Error("URLの形が正しくありません。"); }
-  if (u.username || u.password) throw new Error("IDやパスワードが入ったURLはチェックできません。IDやパスワードを含まないURLで、もう一度お試しください。");
+  try { u = new URL(url); } catch (e) { throw new Error("URLとして読み取れませんでした。空白や全角の文字が混ざっていないかを確かめて、もう一度お試しください。"); }
+  if (u.username || u.password) throw new Error("IDやパスワードが入ったURLは、安全のためチェックしていません。URLの中の「ID:パスワード@」の部分を消して、もう一度お試しください。");
   return u.href;
 }
 
@@ -59,7 +59,7 @@ async function onCheck(url, scroll = true) {
     drawRecent(list);
     if (scroll) setTimeout(() => window.scrollTo({ top: slot.getBoundingClientRect().top + window.scrollY - 128, behavior: "smooth" }), 60);
   } catch (e) {
-    $("span", errBox).textContent = e && e.message ? e.message : "ページを取得できませんでした。URLを確かめて、もう一度お試しください。";
+    $("span", errBox).textContent = e && e.message ? e.message : "ページを読み取れませんでした。URLに入力の誤りがないかを確かめて、もう一度お試しください。";
     errBox.hidden = false;
     // 前の結果が残っていると「今回チェックできた」ように見えるので、エラーのあいだは隠す
     slot.hidden = true;

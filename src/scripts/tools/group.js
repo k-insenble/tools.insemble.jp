@@ -35,7 +35,7 @@ function onNames() {
   spreadRow.hidden = !hasTags(people);
   const n = markedLeads(people).length;
   leadNote.hidden = !n;
-  leadNote.textContent = n ? `★の${n}人を、リーダーとして1グループに1人ずつ分けます` : "";
+  leadNote.textContent = n ? `★の${n}人を、リーダーとして1グループに1人ずつ分けます。` : "";
 }
 names.addEventListener("input", onNames);
 even.addEventListener("change", pf.sync);
@@ -43,7 +43,7 @@ even.addEventListener("change", pf.sync);
 function decide(scroll = true) {
   const { people, warnings } = pf.read();
   if (people.length < 2) {
-    showMsgs(msgs, [["err", "参加者を2人以上入れてください（1行に1人）。"]]);
+    showMsgs(msgs, [["err", "グループに分けるには、2人以上の名前が必要です。参加者の欄に、1行に1人ずつ入れてください。"]]);
     names.focus();
     return;
   }
@@ -54,9 +54,9 @@ function decide(scroll = true) {
   if (marked.length) rules.push({ type: "lead", members: marked });
   const { groups, unmet } = arrange(people, sizes, { random: random.checked, rules });
   const notes = [...warnings, ...rw].map((w) => ["warn", w]);
-  if (unmet > 0) notes.push(["warn", `人数の都合で、守れなかった条件が${unmet}件あります。`]);
-  if (sizes.length === 1) notes.push(["info", "1つのグループになりました。グループの数をふやしてください。"]);
-  if (marked.length > sizes.length) notes.push(["info", `リーダー（★）が${marked.length}人、グループが${sizes.length}つなので、リーダーが2人以上いるグループがあります。`]);
+  if (unmet > 0) notes.push(["warn", `人数の都合で、守れなかった条件が${unmet}件あります。「もう一回シャッフル」で分け直すか、グループの数を変えると、守れることがあります。`]);
+  if (sizes.length === 1) notes.push(["info", "全員が1つのグループに入りました。分けるときは、グループの数を2以上にするか、1グループの人数を減らしてください。"]);
+  if (marked.length > sizes.length) notes.push(["info", `リーダー（★）が${marked.length}人、グループが${sizes.length}つなので、リーダーが2人以上いるグループがあります。1グループに1人ずつにしたいときは、グループの数を${marked.length}にしてください。`]);
   else if (marked.length && marked.length < sizes.length && !leader.checked) notes.push(["info", `リーダー（★）のいないグループが${sizes.length - marked.length}つあります。「リーダーを決める」をオンにすると、そのグループだけランダムで決めます。`]);
   showMsgs(msgs, notes);
   // グループの中は、決まっているリーダーを先頭に
@@ -89,7 +89,7 @@ function draw() {
     <div class="out-head">
       <div>
         <p class="out-t"><b>${groups.length}</b>グループ・${people.length}人</p>
-        <p class="out-d">${[...new Set(groups.map((g) => g.length))].sort((a, b) => b - a).map((n) => `${n}人`).join("・")}のグループ${lead ? "・リーダーに印" : ""}</p>
+        <p class="out-d">${[...new Set(groups.map((g) => g.length))].sort((a, b) => b - a).map((n) => `${n}人`).join("・")}のグループに分けました。${lead ? "リーダーには印を付けています。" : ""}</p>
       </div>
       <div class="acts">
         <button type="button" class="btn btn-primary" data-do="shuffle">${svg("shuffle", 16)}もう一回シャッフル</button>
@@ -197,7 +197,7 @@ out.addEventListener("click", async (e) => {
   if (d === "csv") download(new Blob([asCsv()], { type: "text/csv;charset=utf-8" }), `グループ分け_${stamp()}.csv`);
   if (d === "image") {
     try { download(await toImage(), `グループ分け_${stamp()}.png`); }
-    catch (err) { showMsgs(msgs, [["err", "画像を作れませんでした。人数が多いときは「結果をコピー」をお使いください。"]]); }
+    catch (err) { showMsgs(msgs, [["err", "結果を画像にできませんでした。グループや人数が多いと、ブラウザで大きな画像を作りきれないことがあります。もう一度「画像で保存」を押すか、「結果をコピー」や「CSVで保存」で持ち出してください。"]]); }
   }
   if (d === "reset") {
     result = null;

@@ -107,7 +107,7 @@ function draw() {
   const can = idx.length > 0 && !spinning;
   el.go.disabled = el.hub.disabled = !can;
   if (!people.length) el.left.textContent = "";
-  else if (!idx.length) el.left.textContent = "全員決まりました。「全員に戻す」で最初からやり直せます。";
+  else if (!idx.length) el.left.textContent = "全員決まりました。もう一度回すときは「全員に戻す」を押してください。";
   else el.left.textContent = off.size ? `のこり ${idx.length}人（${people.length}人中）` : `${idx.length}人`;
   drawCands();
   drawHistory();
@@ -115,7 +115,7 @@ function draw() {
 
 function drawHistory() {
   el.hist.hidden = history.length === 0;
-  el.histList.innerHTML = history.map((h) => `<li>${esc(h.name)}${h.kept ? "<small>外さずに回した回</small>" : ""}</li>`).join("");
+  el.histList.innerHTML = history.map((h) => `<li>${esc(h.name)}${h.kept ? "<small>外さずに残しました</small>" : ""}</li>`).join("");
 }
 
 /* ---------- 回す ---------- */

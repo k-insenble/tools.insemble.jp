@@ -68,15 +68,15 @@ if ($fp && flock($fp, LOCK_EX)) {
   if ($n < RATE_PER_MIN) { ftruncate($fp, 0); rewind($fp); fwrite($fp, (string) ($n + 1)); fflush($fp); }
   flock($fp, LOCK_UN);
   fclose($fp);
-  if ($n >= RATE_PER_MIN) fail('短時間にたくさんのチェックがありました。1分ほど待ってから、もう一度お試しください。', 429);
+  if ($n >= RATE_PER_MIN) fail('短い時間にチェックが続いたため、いったん受け付けを止めています。1分ほど待ってから、もう一度お試しください。', 429);
 }
 
 /* ---- 入力チェック ---- */
 $url = trim((string) ($_POST['url'] ?? ''));
-if ($url === '' || strlen($url) > 2048) fail('URLを入力してください。');
+if ($url === '' || strlen($url) > 2048) fail('URLを読み取れませんでした。URLが空でないか、2048文字を超えていないかを確かめてください。');
 if (!preg_match('#^https?://#i', $url)) $url = 'https://' . $url;
 $p = parse_url($url);
-if (!$p || empty($p['host']) || !in_array(strtolower($p['scheme'] ?? ''), ['http', 'https'], true)) fail('URLの形が正しくありません。');
+if (!$p || empty($p['host']) || !in_array(strtolower($p['scheme'] ?? ''), ['http', 'https'], true)) fail('URLとして読み取れませんでした。空白や全角の文字が混ざっていないかを確かめて、もう一度お試しください。');
 
 /* ---- SSRF対策：公開IPだけに接続する ---- */
 function resolve_public(string $host): ?string {
@@ -103,18 +103,18 @@ for ($i = 0; $i <= MAX_REDIRECTS; $i++) {
   $u = parse_url($cur);
   $host = $u['host'] ?? '';
   $scheme = strtolower($u['scheme'] ?? '');
-  if (!in_array($scheme, ['http', 'https'], true)) fail('このURLにはアクセスできません。');
+  if (!in_array($scheme, ['http', 'https'], true)) fail('このページは、このツールでは読み取れない形のURLへ移動するため、確かめられませんでした。ブラウザでページを開き、最後に表示されたURLを入れて、もう一度お試しください。');
   // ID・パスワード入りのURLは使わない（相手のサーバーに送ったり、結果に残したりしないように）
   if (isset($u['user']) || isset($u['pass'])) fail($i === 0
-    ? 'IDやパスワードが入ったURLはチェックできません。IDやパスワードを含まないURLで、もう一度お試しください。'
-    : 'このページは、チェックできないURLへ移動するため、確かめられません。');
+    ? 'IDやパスワードが入ったURLは、安全のためチェックしていません。URLの中の「ID:パスワード@」の部分を消して、もう一度お試しください。'
+    : 'このページは、このツールでは読み取れない形のURLへ移動するため、確かめられませんでした。ブラウザでページを開き、最後に表示されたURLを入れて、もう一度お試しください。');
   $ipAddr = $host ? resolve_public($host) : null;
-  if (!$ipAddr) fail('このURLにはアクセスできません。公開されているページのURLを入力してください。');
+  if (!$ipAddr) fail('ページが見つかりませんでした。URLに入力の誤りがないか、インターネットに公開されているページかを確かめてください。社内だけのページや localhost のページは読み取れません。');
   $port = (int) ($u['port'] ?? ($scheme === 'https' ? 443 : 80));
   // 入力したURLか、転送先のURLかで伝え方を変える
   if (!in_array($port, PORTS, true)) fail($i === 0
-    ? "このURLはチェックできません。URLの途中にある「:{$port}」を消して、もう一度お試しください。"
-    : 'このページは、チェックできないURLへ移動するため、確かめられません。');
+    ? "ポート番号（:{$port}）が付いたURLは読み取れません。URLから「:{$port}」を消して、もう一度お試しください。"
+    : 'このページは、このツールでは読み取れない形のURLへ移動するため、確かめられませんでした。ブラウザでページを開き、最後に表示されたURLを入れて、もう一度お試しください。');
 
   $buf = '';
   $ch = curl_init($cur);
@@ -142,17 +142,17 @@ for ($i = 0; $i <= MAX_REDIRECTS; $i++) {
   curl_close($ch);
 
   // 23 = 書き込み中断（自分で打ち切った）は正常扱い
-  if ($errno && $errno !== 23 && $buf === '') fail('ページを取得できませんでした。URLが正しいか、ページが公開されているかを確かめてください。', 502);
+  if ($errno && $errno !== 23 && $buf === '') fail('ページを読み取れませんでした。URLに誤りがないか、ページが公開されているかを確かめて、もう一度お試しください。', 502);
   if ($status >= 300 && $status < 400 && $loc !== '') { $cur = $loc; continue; }
   $body = $buf;
   break;
 }
 // 移動が5回を超えたときと、移動先が書かれていないときで伝え方を変える
 if ($status >= 300 && $status < 400) fail($i > MAX_REDIRECTS
-  ? 'ページの移動が何度も続いたため、たどり着けませんでした。'
-  : "ページを開けませんでした（HTTP {$status}）。URLを確かめてください。");
-if ($status >= 400) fail("ページを開けませんでした（HTTP {$status}）。URLを確かめてください。");
-if ($body === '') fail('ページの中身が空でした。');
+  ? 'ページの転送（リダイレクト）が何度も続いたため、たどり着けませんでした。ブラウザでページを開き、最後に表示されたURLを入れて、もう一度お試しください。'
+  : "ページを開けませんでした。サーバーから「HTTP {$status}」という応答が返っています。URLに誤りがないか、ページが公開されているかを確かめてください。");
+if ($status >= 400) fail("ページを開けませんでした。サーバーから「HTTP {$status}」という応答が返っています。URLに誤りがないか、ページが公開されているかを確かめてください。");
+if ($body === '') fail('ページは開けましたが、中身が空でした。URLに誤りがないかを確かめて、もう一度お試しください。');
 
 /* ---- 文字コードをUTF-8へ ---- */
 $head = preg_match('#<head\b[^>]*>(.*?)(</head>|$)#is', $body, $m) ? $m[1] : $body;
