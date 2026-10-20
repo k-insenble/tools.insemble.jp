@@ -231,6 +231,11 @@ code,pre{font-family:var(--font-mono)}
 @keyframes ping{0%{opacity:.7;transform:scale(1)}80%,100%{opacity:0;transform:scale(1.55)}}
 .issue-jump{display:inline-flex;align-items:center;gap:6px;margin-top:6px;min-height:36px;padding:6px 14px;border-radius:99px;font-family:var(--font-display);font-weight:700;font-size:13.5px;color:var(--warn-ink);background:var(--warn-bg);border:1px solid color-mix(in oklch,var(--warn-ink) 30%,transparent);transition:.16s}
 .issue-jump b{font-size:15px}
+/* 文字は1つの flex アイテムにまとめ、狭い幅では「直すところが／n件あります」の区切りでだけ折り返す */
+.issue-jump .ij-t{text-align:left}
+.issue-jump .ij-t>span{display:inline-block;white-space:nowrap}
+.issue-jump svg{flex-shrink:0}
+@media (max-width:359px){.issue-jump{padding:6px 12px}.issue-jump svg{display:none}}
 .issue-jump.err{color:var(--err);background:var(--err-bg);border-color:color-mix(in oklch,var(--err) 30%,transparent)}
 .issue-jump.info{color:var(--info);background:var(--info-bg);border-color:color-mix(in oklch,var(--info) 30%,transparent)}
 .issue-jump:hover{transform:translateY(-1px);box-shadow:var(--shadow-sm)}
