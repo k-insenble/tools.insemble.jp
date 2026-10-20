@@ -248,7 +248,7 @@ export function renderResults(root, d) {
           </div>
           <h2 style="font-family:var(--font-display);font-weight:800;font-size:20px;color:var(--ink);margin:8px 0 3px">${esc(d.statusNote)}</h2>
           <p style="font-size:13px;color:var(--muted);margin:0">${n
-            ? `<button type="button" class="issue-jump ${worst}" data-tab="issues">${svg("sparkle", 14)}直すところが<b>${n}件</b>あります</button>`
+            ? `<button type="button" class="issue-jump ${worst}" data-tab="issues">${svg("sparkle", 14)}<span class="ij-t"><span>直すところが</span><span><b>${n}件</b>あります</span></span></button>`
             : "直すところはありません"}</p>
         </div>
         ${n ? `<div class="score-actions">${copyBtn(allFix, "修正コードをまとめてコピー", "solid")}</div>` : ""}
