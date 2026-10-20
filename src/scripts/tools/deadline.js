@@ -5,8 +5,8 @@
    ・ユーザーが入れた文字は textContent で入れる（HTML として解釈させない）
    =========================================================== */
 import {
-  DAY, HOUR, MIN, WD, STORE_KEY, VERSION, pad2, sod, ymd, md, uid, dueAt, parts, ptext,
-  view, notice, formulas, toTsv, toCsv, parseBulk, normalize, tidy, samples,
+  DAY, HOUR, MIN, WD, STORE_KEY, VERSION, pad2, sod, ymd, md, hm, uid, dueAt, parts, ptext,
+  view, notice, weekly, formulas, toTsv, toCsv, parseBulk, normalize, tidy, samples,
 } from "../../lib/deadline.js";
 import { $, copyText, download, reduceMotion } from "./common.js";
 
@@ -24,9 +24,9 @@ function init() {
     place: $("#an-place"), placeT: $("#an-place-t"), placeNo: $("#an-place-no"), placeYes: $("#an-place-yes"),
     composer: $("#an-composer"), cmodeT: $("#an-cmode-t"), mode: $("#an-mode"), one: $("#an-one"), bulk: $("#an-bulk"),
     title: $("#an-title"), dchips: $("#an-dchips"), date: $("#an-date"), tchips: $("#an-tchips"), time: $("#an-time"),
-    kj: $("#an-kj"), eg: $("#an-eg"), bulkIn: $("#an-bulk-in"), bres: $("#an-bres"), preview: $("#an-preview"), cancel: $("#an-cancel"), submit: $("#an-submit"),
+    kj: $("#an-kj"), eg: $("#an-eg"), bulkIn: $("#an-bulk-in"), bres: $("#an-bres"), preview: $("#an-preview"), prevL: $("#an-prev-l"), cancel: $("#an-cancel"), submit: $("#an-submit"),
     cards: $("#an-cards"), empty: $("#an-empty"), first: $("#an-first"),
-    done: $("#an-done"), dtoggle: $("#an-dtoggle"), dn: $("#an-dn"), dlist: $("#an-dlist"),
+    done: $("#an-done"), week: $("#an-week"), weekT: $("#an-week-t"), weekS: $("#an-week-s"), dtoggle: $("#an-dtoggle"), dn: $("#an-dn"), dlist: $("#an-dlist"),
     todayBtn: $("#an-today-btn"), tdate: $("#an-tdate"), tcount: $("#an-tcount"), tbody: $("#an-tbody"), tbar: $("#an-tbar"),
     task: $("#an-task"), tasks: $("#an-tasks"), alldone: $("#an-alldone"), notasks: $("#an-notasks"),
     tsv: $("#an-tsv"), csv: $("#an-csv"), store: $("#an-store"), toast: $("#an-toast"), toastT: $("#an-toast-t"), undo: $("#an-undo"),
@@ -66,7 +66,7 @@ function init() {
   const stored = load();
   let data = stored ? tidy(normalize(stored, t0), t0) : { ...normalize(null, t0), ...samples(t0) };
   if (!stored) data.ui.mini = standalone(); // アプリとして開いた初回はミニから
-  const ui = { composer: false, mode: "one", dDate: "", dTime: "23:59", showDone: false, noticeOff: "", fresh: null, fx: new Set(), bip: null, placeGuide: false, lastDay: ymd(t0) };
+  const ui = { composer: false, edit: null, mode: "one", dDate: "", dTime: "23:59", showDone: false, noticeOff: "", fresh: null, fx: new Set(), bip: null, placeGuide: false, lastDay: ymd(t0) };
 
   /* ---------- 小さな道具 ---------- */
   const h = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
@@ -88,7 +88,33 @@ function init() {
     fx: '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><rect x="1.5" y="1.5" width="9" height="9" rx="1.5" stroke="currentColor" stroke-width="1.2"/><path d="M1.5 4.5h9M4.5 4.5v6" stroke="currentColor" stroke-width="1.2"/></svg>',
     x: '<svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M2 2l6 6M8 2l-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
     tick: '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2.5 6.2l2.3 2.3 4.7-5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    pen: '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M7.4 2.6l2 2M2 10l.5-2.3 5.6-5.6a1 1 0 0 1 1.4 0l.4.4a1 1 0 0 1 0 1.4L4.3 9.5 2 10Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>',
   };
+
+  /* 名前をその場で書き換える（締切・今日やること）。名前のボタンを入力欄に差し替え、
+     Enter・欄の外を押すと保存、Esc で取り消し。空にしたときは元の名前のまま */
+  function rename(btn, value, save) {
+    if (btn.hidden) return;
+    const inp = h("input", "an-edit");
+    inp.type = "text"; inp.value = value; inp.maxLength = 120; inp.autocomplete = "off"; inp.enterKeyHint = "done";
+    inp.setAttribute("aria-label", "新しい名前");
+    btn.hidden = true; btn.after(inp);
+    inp.focus({ preventScroll: true }); inp.select();
+    let ended = false;
+    const end = (ok, back) => {
+      if (ended) return; ended = true; // 欄を消すと blur も来るので、2回目は何もしない
+      const v = inp.value.trim().slice(0, 120);
+      inp.remove(); btn.hidden = false;
+      if (back) btn.focus({ preventScroll: true });
+      if (ok && v && v !== value) save(v);
+    };
+    inp.addEventListener("keydown", (e) => {
+      if (e.isComposing) return; // 変換を決める Enter では保存しない
+      if (e.key === "Enter") { e.preventDefault(); end(true, true); }
+      if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); end(false, true); }
+    });
+    inp.addEventListener("blur", () => end(true, false));
+  }
 
   /* キーごとに要素を使い回して、並び順だけ合わせる（毎回作り直さない） */
   function sync(box, items, map, make, update) {
@@ -127,17 +153,12 @@ function init() {
     const n = h("article", "an-card");
     n.dataset.id = c.d.id;
     n.tabIndex = -1; // 完了を押したあと、はんこを見せているあいだフォーカスを置いておく場所
-    n.innerHTML = `<div class="an-ctop2"><span class="an-pill"><span class="an-dot"></span><span data-r="pill"></span></span><span class="an-smp" data-r="smp" hidden>サンプル</span><span class="an-date" data-r="date"></span></div>
-<h3 class="an-ttl" data-r="title"></h3>
+    n.innerHTML = `<div class="an-ctop2"><span class="an-pill"><span class="an-dot"></span><span data-r="pill"></span></span><span class="an-smp" data-r="smp" hidden>サンプル</span><button type="button" class="an-date an-ren" data-a="due" title="押すと期限の日時を変えられます"><span data-r="date"></span>${ICON.pen}<span class="sr-only">（期限を変える）</span></button></div>
+<h3 class="an-ttl"><button type="button" class="an-ren" data-a="ren" title="押すと名前を変えられます"><span data-r="title"></span>${ICON.pen}<span class="sr-only">（名前を変える）</span></button></h3>
 <div class="an-left" data-r="left"></div><div class="an-bar" data-r="barw" aria-hidden="true"><i data-r="bar"></i></div>
 <div class="an-over" data-r="over" hidden><b>期限オーバー</b><span data-r="overt"></span></div>
 <div class="an-acts"><button type="button" class="an-act" data-a="done">${ICON.check}完了</button><button type="button" class="an-act" data-a="fx" aria-expanded="false">${ICON.fx}Excelで計算</button><button type="button" class="an-act is-del" data-a="del">${ICON.trash}</button></div>
 <div class="an-fx" data-r="fx" hidden></div>`;
-    const t = c.d.title;
-    n.querySelector('[data-r="title"]').textContent = t;
-    n.querySelector('[data-a="done"]').setAttribute("aria-label", `「${t}」を完了にする`);
-    n.querySelector('[data-a="fx"]').setAttribute("aria-label", `「${t}」の残り日数をExcel・スプレッドシートで計算する関数を表示`);
-    n.querySelector('[data-a="del"]').setAttribute("aria-label", `「${t}」を削除する`);
     n.querySelector('[data-a="del"]').title = "削除";
     if (ui.fresh === c.d.id) replay(n, "is-in");
     return n;
@@ -145,12 +166,20 @@ function init() {
   function updateCard(n, c) {
     const { d, v, featured } = c, prev = n._v;
     const q = (r) => n.querySelector(`[data-r="${r}"]`);
+    if (n._t !== d.title) { // 名前（あとから変えられるので、作るときではなくここで入れる）
+      const t = n._t = d.title;
+      q("title").textContent = t;
+      n.querySelector('[data-a="done"]').setAttribute("aria-label", `「${t}」を完了にする`);
+      n.querySelector('[data-a="fx"]').setAttribute("aria-label", `「${t}」の残り日数をExcel・スプレッドシートで計算する関数を表示`);
+      n.querySelector('[data-a="del"]').setAttribute("aria-label", `「${t}」を削除する`);
+    }
     if (n.dataset.st !== v.st) {
       n.dataset.st = v.st;
       if (prev) replay(n, v.st === "over" ? "is-nudge" : "is-settle");
     }
     n.classList.toggle("is-featured", featured);
     n.classList.toggle("is-done", d.done);
+    n.classList.toggle("is-editing", ui.edit === d.id);
     setText(q("pill"), v.pill);
     setText(q("date"), v.dateLabel);
     q("smp").hidden = !d.sample;
@@ -198,6 +227,11 @@ function init() {
       return;
     }
     const a = b.dataset.a;
+    if (a === "ren") {
+      const d = data.deadlines.find((x) => x.id === id); if (!d) return;
+      rename(b, d.title, (title) => { data.deadlines = data.deadlines.map((x) => (x.id === id ? { ...x, title } : x)); persist(); renderAll(); });
+    }
+    if (a === "due") openComposer(id);
     if (a === "fx") { ui.fx.has(id) ? ui.fx.delete(id) : ui.fx.add(id); renderDeadlines(); }
     if (a === "done") {
       b.closest(".an-card").focus({ preventScroll: true });
@@ -214,7 +248,7 @@ function init() {
 
   /* ---------- 締切の一覧・お知らせ・ミニ ---------- */
   let live = []; // まだ完了していない締切（近い順）
-  let lastNoticeKey = null, lastDoneSig = "";
+  let lastNoticeKey = null, lastDoneSig = "", lastWeekN = -1;
   function renderDeadlines(now = Date.now()) {
     const sorted = [...data.deadlines].sort((a, b) => a.dueDate - b.dueDate);
     const act = sorted.filter((d) => !d.done || now - d.doneAt < 1400);
@@ -242,6 +276,14 @@ function init() {
         return li;
       }));
     }
+    // 今週の振り返り（完了が増えたら、はんこを弾ませる）
+    const wk = weekly(doneArr, now); // 完了リストに移ったものだけ数える（はんこを見せているあいだは数えない）
+    el.week.hidden = !wk;
+    if (wk) {
+      setText(el.weekT, wk.msg); setText(el.weekS, wk.sub);
+      if (lastWeekN >= 0 && wk.n > lastWeekN) replay(el.week, "is-pop");
+    }
+    lastWeekN = wk ? wk.n : 0;
     // バックアップの声かけ（自分の締切が5件になったら一度だけ）
     const ownN = own().length;
     el.backup.hidden = !(canStore && !data.ui.backupAsked && ownN >= 5);
@@ -268,7 +310,7 @@ function init() {
       const dot = h("span", "an-dot"); dot.style.cssText = "width:7px;height:7px;flex:none;border-radius:50%;background:var(--dot)";
       li.append(dot, h("span", "an-mt", c.title), h("span", "an-mshort"));
       return li;
-    }, (li, c) => { li.dataset.st = c.v.st; setText(li.lastChild, c.v.short); });
+    }, (li, c) => { li.dataset.st = c.v.st; setText(li.children[1], c.title); setText(li.lastChild, c.v.short); });
     el.mempty.hidden = live.length > 0;
   }
   // タブ名（タスクバー）とアプリのバッジ：自分の締切があるとき・アプリで開いたときだけ（サンプルを検索エンジンのタイトルにしない）
@@ -313,9 +355,12 @@ function init() {
   function renderComposer() {
     el.composer.hidden = !ui.composer;
     if (!ui.composer) return;
-    const bulk = ui.mode === "bulk";
+    const bulk = ui.mode === "bulk", edit = !!ui.edit;
     el.one.hidden = bulk; el.bulk.hidden = !bulk;
-    setText(el.cmodeT, bulk ? "まとめて貼り付け" : "1件ずつ入れる");
+    el.mode.hidden = edit;
+    setText(el.cmodeT, edit ? "締切を直す" : bulk ? "まとめて貼り付け" : "1件ずつ入れる");
+    setText(el.prevL, edit ? "直すと" : "追加すると");
+    setText(el.submit, edit ? "保存する" : "追加する");
     setText(el.mode, bulk ? "1件ずつ入れる" : "Notion・Excelからまとめて貼り付け");
     // ボタンは日付が変わったときだけ作り直す（押したボタンからフォーカスが外れないように）
     const dl = DCHIPS(), sig = dl.map((x) => x.join()).join();
@@ -348,15 +393,37 @@ function init() {
     setText(el.preview, text); el.preview.className = cls;
     el.submit.setAttribute("aria-disabled", String(!ok));
   }
-  function openComposer() {
+  // 引数に締切の id を渡すと「締切を直す」：同じ入力欄に、その締切の名前と期限を入れて開く
+  function openComposer(editId) {
     if (data.ui.mini) setMini(false);
-    ui.composer = true; ui.mode = "one"; ui.dDate = ymd(sod(Date.now()) + DAY + 2 * HOUR); ui.dTime = "23:59";
-    el.title.value = ""; el.title.removeAttribute("aria-invalid"); el.bulkIn.value = "";
+    const d = typeof editId === "string" ? data.deadlines.find((x) => x.id === editId && !x.done) : null;
+    ui.composer = true; ui.mode = "one"; ui.edit = d ? d.id : null;
+    ui.dDate = d ? ymd(d.dueDate) : ymd(sod(Date.now()) + DAY + 2 * HOUR); ui.dTime = d ? hm(d.dueDate) : "23:59";
+    el.title.value = d ? d.title : ""; el.title.removeAttribute("aria-invalid"); el.bulkIn.value = "";
     renderComposer(); renderDeadlines();
     el.title.focus({ preventScroll: true });
     el.composer.scrollIntoView?.({ block: "nearest", behavior: motion ? "smooth" : "auto" });
   }
-  function closeComposer() { ui.composer = false; renderComposer(); renderDeadlines(); el.open.focus(); }
+  function closeComposer() {
+    const id = ui.edit;
+    ui.composer = false; ui.edit = null; renderComposer(); renderDeadlines();
+    backTo(id);
+  }
+  // 閉じたあとのフォーカス：直していた締切があれば、そのカードの日時へ。なければ「締切を追加」へ
+  function backTo(id) {
+    const card = id && cardEls.get(id);
+    if (!card) { el.open.focus(); return; }
+    card.scrollIntoView?.({ block: "nearest", behavior: motion ? "smooth" : "auto" });
+    card.querySelector('[data-a="due"]').focus({ preventScroll: true });
+  }
+  function saveEdit(title, dueDate) {
+    const id = ui.edit;
+    data.deadlines = data.deadlines.map((d) => (d.id === id ? { ...d, title, dueDate, createdAt: Math.min(d.createdAt, dueDate - HOUR) } : d));
+    ui.composer = false; ui.edit = null;
+    persist(); renderComposer(); renderAll();
+    const card = cardEls.get(id); if (card) replay(card, "is-settle");
+    backTo(id);
+  }
   function addDeadlines(list) {
     const now = Date.now();
     const prev = dropSamples();
@@ -381,10 +448,11 @@ function init() {
     const due = dueAt(ui.dDate, ui.dTime);
     if (!title) { el.title.setAttribute("aria-invalid", "true"); replay(el.title, "is-nudge"); el.title.focus(); return; }
     if (!due) { el.date.focus(); return; }
+    if (ui.edit) return saveEdit(title, due);
     addDeadlines([{ title, dueDate: due }]);
   }
-  el.open.addEventListener("click", openComposer);
-  el.first.addEventListener("click", openComposer);
+  el.open.addEventListener("click", () => openComposer());
+  el.first.addEventListener("click", () => openComposer());
   el.cancel.addEventListener("click", closeComposer);
   el.submit.addEventListener("click", submit);
   el.title.addEventListener("input", () => { el.title.removeAttribute("aria-invalid"); renderPreview(); });
@@ -419,14 +487,17 @@ function init() {
     const list = vis.map((t, i) => ({ t, i })).sort((a, b) => ord(a.t) - ord(b.t) || a.i - b.i).map(({ t }) => ({ id: t.id, t }));
     sync(el.tasks, list, taskEls, ({ t }) => {
       const li = h("li", "an-task");
-      li.innerHTML = `<button type="button" class="an-chk">${ICON.tick}</button><span class="an-tx"><span></span><i></i></span><span class="an-tag" hidden></span><button type="button" class="an-x" title="削除">${ICON.x}</button>`;
-      li.querySelector(".an-tx span").textContent = t.text;
-      li.querySelector(".an-chk").setAttribute("aria-label", `「${t.text}」を完了にする`);
-      li.querySelector(".an-x").setAttribute("aria-label", `「${t.text}」を削除する`);
+      li.innerHTML = `<button type="button" class="an-chk">${ICON.tick}</button><span class="an-tx"><button type="button" class="an-ren" title="押すと書き換えられます"><span class="an-rt"></span>${ICON.pen}<span class="sr-only">（書き換える）</span></button><i></i></span><span class="an-tag" hidden></span><button type="button" class="an-x" title="削除">${ICON.x}</button>`;
       if (ui.fresh === t.id) replay(li, "is-in");
       return li;
     }, (li, { t }) => {
       li.dataset.id = t.id;
+      if (li._t !== t.text) { // 文字（あとから変えられるので、ここで入れる）
+        li._t = t.text;
+        li.querySelector(".an-rt").textContent = t.text;
+        li.querySelector(".an-chk").setAttribute("aria-label", `「${t.text}」を完了にする`);
+        li.querySelector(".an-x").setAttribute("aria-label", `「${t.text}」を削除する`);
+      }
       li.classList.toggle("is-done", t.completed);
       const c = li.querySelector(".an-chk");
       if (c.getAttribute("aria-pressed") !== String(t.completed)) { c.setAttribute("aria-pressed", String(t.completed)); if (t.completed && now - t.completedAt < 600) replay(c, "is-pop"); }
@@ -465,6 +536,9 @@ function init() {
       data.tasks = data.tasks.map((t) => (t.id === id ? { ...t, completed: !t.completed, completedAt: t.completed ? 0 : now } : t));
       persist(); renderTasks();
       setTimeout(() => renderTasks(), 850); // 線を引いてから、下へ
+    } else if (b.classList.contains("an-ren")) {
+      const t = data.tasks.find((x) => x.id === id); if (!t) return;
+      rename(b, t.text, (text) => { data.tasks = data.tasks.map((x) => (x.id === id ? { ...x, text } : x)); persist(); renderTasks(); });
     } else if (b.classList.contains("an-x")) {
       const prev = snap(); const t = data.tasks.find((x) => x.id === id);
       data.tasks = data.tasks.filter((x) => x.id !== id);
