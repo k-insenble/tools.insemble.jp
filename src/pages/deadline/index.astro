@@ -10,6 +10,7 @@ const FAQ = [
   { q: "入れた締切や「今日やること」は、どこかに送られますか？", a: "送られません。入れた内容は、お使いのブラウザの中（localStorage）にだけ保存し、運営者のサーバーにも外部のサービスにも届きません。そのため、別のパソコンやスマホでは見られません。ほかの端末に移したいときは、「コピーしてNotion・Excelに貼る」でコピーした一覧を、移す先の「Notion・Excelからまとめて貼り付け」に貼ってください。" },
   { q: "データが消えることはありますか？", a: "あります。ブラウザの「閲覧履歴データの削除」などでサイトのデータを消すと、入れた締切も一緒に消えます。シークレットウィンドウ（履歴を残さない画面）で使った場合は、ウィンドウを閉じると消えます。大事な締切は、ときどき「Excelに書き出す（バックアップにも）」でファイルに保存しておくと、消えても手元に残ります。" },
   { q: "日付だけを入れたとき、期限は何時になりますか？", a: "その日の23時59分59秒までとして数えます。たとえば10月10日とだけ入れると、10月10日が終わる瞬間までが残り時間になります。時刻を決めたいときは、「12:00」「18:00」などのボタンを押すか、時刻の欄で選んでください。時刻は、お使いの端末の時計（タイムゾーン＝地域ごとの標準時）に合わせています。" },
+  { q: "入れたあとで、締切の名前や期限の日時を変えられますか？", a: "変えられます。締切のカードの名前や、今日やることの文字を押すと、その場で書き換えられます。Enter キーを押すか、ほかの場所を押すと保存し、Esc キーを押すと元の名前に戻ります。期限の日時は、カードの右上にある日時を押すと、入力欄が開いて変えられます。「明日」「18:00」などのボタンも使えます。完了にした締切は、「戻す」で未完了にしてから変えてください。" },
   { q: "Notion・Excel・スプレッドシートの締切をまとめて入れられますか？", a: "できます。「締切を追加」を押し、入力欄の上にある「Notion・Excelからまとめて貼り付け」に切り替えてから、1行に1件ずつ「タスク名」と「期限」を貼り付けてください。区切りは、タブ（Excelやスプレッドシートからコピーしたときの区切り）、カンマ、2つ以上の空白のどれでも読み取ります。期限は「2026-10-10」「2026/10/10」「10月10日」などの書き方で入れられ、後ろに「18:00」のように時刻を付けることもできます。", cta: { label: "まとめて貼り付ける", do: "bulk" } },
   { q: "登録した締切をNotionやExcelに持っていけますか？", a: "持っていけます。ツールの下にある「コピーしてNotion・Excelに貼る」を押すと、まだ完了していない締切を「タスク名」と「期限」の2列でコピーします。Notionの表やExcel・スプレッドシートに、そのまま貼り付けられます。残り日数が自動で変わるファイルにしたいときは、「Excelに書き出す（バックアップにも）」を押してください。Excelで開くたびに、その日の残り日数が計算し直されます。" },
   { q: "パソコンに常に表示しておけますか？", a: "できます。Chrome や Edge では、ツールのいちばん上にある「アプリとして置く」を押すと、ブラウザとは別のウィンドウで開くアプリとして置けます。画面の隅に置いて「ミニ」を押すと、ウィンドウが締切を1行ずつ並べた小さな表示に縮み、もう一度押すと元の大きさに戻ります。デスクトップやタスクバーのアイコンを右クリックすると、「締切を追加」「今日やることを書く」をすぐに開けます。Mac の Safari では、macOS 14 以降なら、メニューバーの「ファイル」から「Dockに追加」を選ぶと置けます。iPhone・Android では、共有メニューやブラウザのメニューにある「ホーム画面に追加」から置けます。置き方が分からないときは、「アプリとして置く」を押すと、お使いのブラウザでの手順を表示します。Firefox のパソコン版はアプリとして置けないため、Chrome・Edge・Safari で開いてください。置いたあとは、ネットにつながっていなくても使えます。", cta: { label: "アプリとして置く", do: "place" } },
@@ -171,7 +172,7 @@ const PLUS = (s: number, w = 1.7) => `<svg width="${s}" height="${s}" viewBox="0
               <p class="an-bres" id="an-bres" aria-live="polite"></p>
             </div>
             <div class="an-cfoot">
-              <div class="an-prev"><span>追加すると</span><b id="an-preview"></b></div>
+              <div class="an-prev"><span id="an-prev-l">追加すると</span><b id="an-preview"></b></div>
               <button type="button" class="an-btn" id="an-cancel">やめる</button>
               <button type="button" class="an-btn is-primary" id="an-submit">追加する</button>
             </div>
@@ -187,6 +188,7 @@ const PLUS = (s: number, w = 1.7) => `<svg width="${s}" height="${s}" viewBox="0
           </div>
 
           <div class="an-done" id="an-done" hidden>
+            <p class="an-week" id="an-week" hidden><span class="an-sumi" aria-hidden="true">済</span><b id="an-week-t"></b><small id="an-week-s"></small></p>
             <button type="button" class="an-dtoggle" id="an-dtoggle" aria-expanded="false" aria-controls="an-dlist"><span class="an-caret" aria-hidden="true"></span>完了した締切 <span id="an-dn"></span>件</button>
             <ul class="an-dlist" id="an-dlist" hidden></ul>
           </div>
@@ -369,6 +371,16 @@ const PLUS = (s: number, w = 1.7) => `<svg width="${s}" height="${s}" viewBox="0
   .an-date{margin-left:auto;font-size:12px;color:var(--sub);font-variant-numeric:tabular-nums}
   .an-ttl{font-size:15px;font-weight:700;line-height:1.4;text-wrap:pretty;overflow-wrap:anywhere}
   .is-featured .an-ttl{font-size:17px}
+  /* 名前のボタン（押すとその場で書き換え）。鉛筆はふだんは隠し、指で触る端末では薄く出しておく */
+  .an-ren{display:inline;padding:0;border:0;background:none;font:inherit;text-align:left;cursor:text;border-radius:4px}
+  .an-ren svg{display:inline-block;margin-left:6px;vertical-align:-1px;color:var(--sub,#617275);opacity:0;transition:opacity .15s}
+  .an-ren:hover svg,.an-ren:focus-visible svg{opacity:1}
+  .an-ren:disabled{cursor:default}
+  .an-ren:disabled svg{display:none}
+  .an-edit{display:block;width:100%;min-width:0;margin:-3px 0;padding:2px 6px;border:1px solid #A9C6C5;border-radius:6px;background:#fff;color:#1B2A2D;font:inherit}
+  .an-tx:has(.an-edit) i{display:none}
+  .an-ren.an-date{color:var(--sub);font-size:12px;font-variant-numeric:tabular-nums;cursor:pointer}
+  .an-card.is-editing{outline:2px solid #2E6A74;outline-offset:2px}
   .an-left{display:flex;align-items:baseline;flex-wrap:wrap;color:var(--num);line-height:1;padding:2px 0 4px;transition:color .8s}
   .an-left.is-flip,.an-over.is-flip{animation:aw-flip .5s ease-out}
   .an-ato{font-size:15px;font-weight:700;margin-right:8px;color:var(--sub)}
@@ -413,6 +425,10 @@ const PLUS = (s: number, w = 1.7) => `<svg width="${s}" height="${s}" viewBox="0
   .an-caret{display:inline-block;transition:transform .2s}
   .an-caret::before{content:"›"}
   [aria-expanded="true"]>.an-caret{transform:rotate(90deg)}
+  .an-week{display:flex;align-items:center;flex-wrap:wrap;gap:2px 10px;margin-bottom:4px;padding:8px 12px;border-radius:12px;background:#EAF4F3;border:1px solid #CFE3E1;color:#1B2A2D;font-size:13px}
+  .an-week b{font-weight:700}
+  .an-week small{font-size:12px;color:#2E6A74;font-weight:700}
+  .an-week.is-pop .an-sumi{animation:aw-pop .45s ease-out}
   .an-dlist{list-style:none;display:flex;flex-direction:column;gap:4px}
   .an-dlist li{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:12px;border:1px dashed #CFDADC;font-size:13px;color:#617275;animation:aw-in .25s ease-out}
   .an-sumi{width:22px;height:22px;flex:none;border-radius:50%;border:1.5px solid #D2462B;color:#D2462B;font-size:9px;font-weight:900;display:flex;align-items:center;justify-content:center;transform:rotate(-9deg)}
@@ -514,7 +530,8 @@ const PLUS = (s: number, w = 1.7) => `<svg width="${s}" height="${s}" viewBox="0
     .an-x{width:36px;height:36px}
     .an-chk{position:relative}
     .an-chk::after{content:"";position:absolute;inset:-10px}
-    .an-tin input,.an-pick,.an-bta{font-size:16px}
+    .an-tin input,.an-pick,.an-bta,.an-edit{font-size:16px}
+    .an-ren svg{opacity:.55}
   }
 
   /* アプリとして開いたとき：サイトの枠を隠して、ツールだけを画面いっぱいに */

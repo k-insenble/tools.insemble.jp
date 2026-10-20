@@ -75,6 +75,28 @@ export function view(d, now) {
   };
 }
 
+/* ---------- 今週の振り返り（月曜はじまり） ----------
+   完了した締切は30日残る（tidy）ので、今週と先週の分は数えられる。サンプルは数えない
+   期限内＝期限の日時より前に「完了」を押したもの */
+export function weekStart(now) {
+  const d = new Date(sod(now));
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+  return d.getTime();
+}
+export function weekly(deadlines, now) {
+  const w0 = weekStart(now), p0 = weekStart(w0 - 1);
+  const mine = deadlines.filter((d) => d.done && !d.sample);
+  const count = (from, to) => { const l = mine.filter((d) => d.doneAt >= from && d.doneAt < to); return { n: l.length, ok: l.filter((d) => d.doneAt <= d.dueDate).length }; };
+  const tw = count(w0, Infinity), lw = count(p0, w0);
+  const say = (w, { n, ok }) =>
+    ok === n ? (n === 1 ? `${w}は1件、期限内に終えました` : `${w}は${n}件、ぜんぶ期限内に終えました`)
+    : ok ? `${w}は${n}件終えて、${ok}件が期限内でした`
+    : `${w}は${n}件、終えました`;
+  if (tw.n) return { n: tw.n, msg: say("今週", tw), sub: lw.ok && tw.ok > lw.ok ? `先週の${lw.ok}件をこえました` : "" };
+  if (lw.n) return { n: 0, msg: say("先週", lw), sub: "" };
+  return null;
+}
+
 /** お知らせの1行：いちばん近い（いちばん緊急な）締切を代表にする */
 export function notice(cards) {
   if (!cards.length) return { st: "normal", key: "none", msg: "締切はまだありません", sub: "「締切を追加」から入れると、いちばん近い締切の残り時間をここで知らせます", dismissable: false };
